@@ -1,0 +1,113 @@
+{
+  "name": "software-dev-agent",
+  "version": "2.0.0",
+  "description": "Reorganized software development agent with 3 core skills: create-task, generate-plan, execute-task",
+  "storage": "json",
+  "entry": "node openclaw-integration.js",
+  "skills": [
+    {
+      "id": "create-task",
+      "name": "Create Task",
+      "description": "Create development tasks with status=pending (must specify projectKey). Does NOT auto-generate plans - decoupled from planning step.",
+      "command": "create-task-json",
+      "usage": "node openclaw-integration.js create-task-json \"Title\" \"Description\" <projectKey>",
+      "state": "pending"
+    },
+    {
+      "id": "generate-plan",
+      "name": "Generate Plan",
+      "description": "Generate plan files for pending tasks. Processes all pending tasks or specific taskId. Creates docs/plan-{taskId}.md files and updates status to planned.",
+      "command": "generate-plan",
+      "usage": "node openclaw-integration.js generate-plan [taskId]",
+      "state": "planned"
+    },
+    {
+      "id": "execute-task",
+      "name": "Execute Task",
+      "description": "Execute planned tasks with configurable backend (Claude or Cursor). Transitions status: planned → developing → reviewing → done/failed.",
+      "command": "execute-task",
+      "usage": "node openclaw-integration.js execute-task <taskId> [--backend claude|cursor]",
+      "states": [
+        "developing",
+        "reviewing",
+        "done",
+        "failed"
+      ]
+    },
+    {
+      "id": "agent-start",
+      "name": "Start Agent in Tmux",
+      "description": "Start an agent (ccr/claude/cursor) in a tmux session for background execution. Auto-resolves project path and plan file. Use when user wants to run a task with tmux or background agent.",
+      "entry": "node agent-start-skill.js",
+      "command": "start",
+      "usage": "node agent-start-skill.js start <projectKey> <taskId> <backend>",
+      "backends": [
+        "ccr",
+        "claude",
+        "cursor"
+      ],
+      "emoji": "🚀"
+    },
+    {
+      "id": "agent-status",
+      "name": "Agent Status",
+      "description": "Query agent status from tmux sessions. Returns pane status, last output lines, and task info. Use when user asks if agent is running or wants to check progress.",
+      "entry": "node agent-status-skill.js",
+      "command": "status",
+      "usage": "node agent-status-skill.js status <taskId>",
+      "emoji": "📊"
+    },
+    {
+      "id": "agent-stop",
+      "name": "Stop Agent",
+      "description": "Stop an agent running in a tmux session. Sends Ctrl+C (graceful) or force kills the pane. Updates task status to failed.",
+      "entry": "node agent-stop-skill.js",
+      "command": "stop",
+      "usage": "node agent-stop-skill.js stop <taskId> [--force]",
+      "emoji": "🛑"
+    },
+    {
+      "id": "tmux-focus",
+      "name": "Open Agent in iTerm",
+      "description": "Open iTerm2 and switch to the tmux session for a running agent. Triggered when user wants to view agent progress in terminal. Can be called from app via WebSocket.",
+      "entry": "node tmux-focus-skill.js",
+      "command": "focus",
+      "usage": "node tmux-focus-skill.js focus --taskId=<taskId>",
+      "emoji": "🖥️"
+    }
+  ],
+  "commands": [
+    "create-task-json \"<title>\" \"<description>\" <projectKey>",
+    "generate-plan [taskId]",
+    "execute-task <taskId> [--backend claude|cursor]",
+    "list-tasks-json [pending|planned|developing|reviewing|done|failed]",
+    "start-server",
+    "stop-server",
+    "health-check"
+  ],
+  "backends": {
+    "ccr": {
+      "name": "CCR (Claude Code Runner)",
+      "cliCommand": "ccr",
+      "description": "Run ccr code run --agent --dangerously-skip-permissions plan-based-code-generator < planPath. Preferred for tmux-based execution."
+    },
+    "claude": {
+      "name": "Claude Code",
+      "cliCommand": "claude",
+      "description": "Use Claude Code CLI for development via openclaw-integration.js"
+    },
+    "cursor": {
+      "name": "Cursor CLI",
+      "cliCommand": "agent",
+      "description": "Use Cursor CLI for development via openclaw-integration.js"
+    }
+  },
+  "states": {
+    "pending": "Task created, no plan file",
+    "planned": "Plan file generated",
+    "developing": "Execution in progress",
+    "reviewing": "Execution complete, awaiting review",
+    "done": "Task completed and verified",
+    "failed": "Task failed"
+  }
+}

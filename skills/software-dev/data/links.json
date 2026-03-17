@@ -1,0 +1,16 @@
+[
+  {
+    "id": "mmas78sbgytj9",
+    "scheduleItemId": "1",
+    "taskId": "ee03d4bddb53e7d5a87f43424f40aaf5",
+    "linkType": "meeting",
+    "createdAt": "2026-03-03T15:47:30.491Z"
+  },
+  {
+    "id": "mmas78sd3zg45",
+    "scheduleItemId": "2",
+    "taskId": "65b848530f0febe54c14935ffd142937",
+    "linkType": "prep",
+    "createdAt": "2026-03-03T15:47:30.493Z"
+  }
+]

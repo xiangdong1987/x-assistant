@@ -1,0 +1,142 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'release_*'
+  workflow_dispatch: {}
+
+jobs:
+  build-and-release:
+    runs-on: macos-14
+
+    env:
+      # Pin Flutter to a concrete version to avoid "Unable to determine Flutter version" errors.
+      # You can bump this when you upgrade your local Flutter SDK.
+      FLUTTER_VERSION: '3.41.4'
+      GO_VERSION: '1.22'
+      # Flutter project is at the repo root (pubspec.yaml in ./)
+      APP_DIR: '.'
+      APP_NAME: 'XAssistant'
+      ANDROID_FLAVOR: 'debug'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Flutter pub get
+        working-directory: ${{ env.APP_DIR }}
+        run: flutter pub get
+
+      - name: Build proxy (Go)
+        working-directory: ${{ env.APP_DIR }}/proxy
+        run: go build -o ./build/proxy .
+
+      - name: Build macOS app
+        working-directory: ${{ env.APP_DIR }}
+        run: flutter build macos --release
+
+      - name: Inject proxy into macOS app bundle
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          APP_PATH="build/macos/Build/Products/Release/${APP_NAME}.app"
+          PROXY_SRC="proxy/build/proxy"
+          PROXY_DST="$APP_PATH/Contents/MacOS/proxy"
+          mkdir -p "$(dirname "$PROXY_DST")"
+          cp "$PROXY_SRC" "$PROXY_DST"
+          chmod +x "$PROXY_DST"
+          echo "Proxy injected to $PROXY_DST"
+
+      - name: Archive macOS app
+        working-directory: ${{ env.APP_DIR }}/build/macos/Build/Products/Release
+        run: zip -r ${APP_NAME}-macos.zip ${APP_NAME}.app
+
+      - name: Build Android APK
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          if [ "${{ env.ANDROID_FLAVOR }}" = "release" ]; then
+            flutter build apk --release
+          else
+            flutter build apk --debug
+          fi
+
+      - name: Move Android artifact to known path
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          if [ "${{ env.ANDROID_FLAVOR }}" = "release" ]; then
+            cp build/app/outputs/flutter-apk/app-release.apk ${APP_NAME}-android.apk
+          else
+            cp build/app/outputs/flutter-apk/app-debug.apk ${APP_NAME}-android.apk
+          fi
+
+      - name: Generate release changelog
+        run: |
+          # Current tag, e.g. release_1.1.1
+          RELEASE_TAG="${GITHUB_REF_NAME}"
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
+
+          # Find previous tag (excluding current), if any
+          PREV_TAG=$(git describe --tags --abbrev=0 --exclude "${RELEASE_TAG}" 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "## Changes since $PREV_TAG" > CHANGELOG_RELEASE.md
+            git log "$PREV_TAG"..HEAD --pretty=format:'- %s (%h)' >> CHANGELOG_RELEASE.md
+          else
+            echo "## Changes in this release" > CHANGELOG_RELEASE.md
+            git log --pretty=format:'- %s (%h)' >> CHANGELOG_RELEASE.md
+          fi
+          echo "" >> CHANGELOG_RELEASE.md
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-macos
+          path: |
+            build/macos/Build/Products/Release/${{ env.APP_NAME }}-macos.zip
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-android-apk
+          path: |
+            ${{ env.APP_DIR }}/${APP_NAME}-android.apk
+
+      - name: Upload changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-changelog
+          path: CHANGELOG_RELEASE.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          body_path: CHANGELOG_RELEASE.md
+          draft: false
+          prerelease: false
+          files: |
+            build/macos/Build/Products/Release/${{ env.APP_NAME }}-macos.zip
+            ${{ env.APP_DIR }}/${APP_NAME}-android.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

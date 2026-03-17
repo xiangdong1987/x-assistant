@@ -1,0 +1,35 @@
+{
+  "skill_name": "software-dev-agent",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to create a new task for my project. The title is 'Add user authentication' and description is 'Implement user login and registration with JWT tokens'. The project key is 'my-project'.",
+      "expected_output": "Task should be created successfully and a plan file should be generated in the project's docs directory. The task status should change from pending to planned.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Can you help me process all pending tasks and generate plans for them? I have several tasks waiting for planning.",
+      "expected_output": "All pending tasks should be processed, task IDs generated, and plan files created in respective project docs directories. Task statuses should change from pending to planned.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I want to create a development task for the inventory management system. Title: 'Fix inventory sync bug', Description: 'The inventory synchronization is failing when stock levels are zero', Project: 'my-project'",
+      "expected_output": "Task created with proper title, description, and project key. Plan file generated in project docs. Task status updated to planned.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Please create a task for implementing a new API endpoint. Title: 'Add order history endpoint', Description: 'Create REST API endpoint to retrieve user order history with pagination', Project key: 'my-project'",
+      "expected_output": "Task created successfully with all required parameters. Plan file generated. No further development execution should occur.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "I need to generate plans for all my pending development tasks. Can you run the process-pending command?",
+      "expected_output": "process-pending command executed successfully. All pending tasks should have plan files generated and status changed to planned. Should stop after plan generation without executing development.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "key": "my-app",
+    "name": "示例项目",
+    "path": "$HOME/workspace/my-app",
+    "type": "backend-service",
+    "techStack": ["Node.js", "TypeScript"],
+    "owner": "you",
+    "status": "active",
+    "description": "请修改为你的项目路径与信息"
+  },
+  {
+    "key": "xassistant",
+    "name": "XAssistant",
+    "path": ".",
+    "type": "tool",
+    "techStack": ["Flutter", "Dart", "Go"],
+    "owner": "you",
+    "status": "active",
+    "description": "本仓库；path 可填当前仓库根路径"
+  }
+]

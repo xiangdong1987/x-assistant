@@ -1,0 +1,73 @@
+{
+  "nextSeq": 4,
+  "sources": [
+    {
+      "key": "openclaw",
+      "displayName": "OpenClaw"
+    },
+    {
+      "key": "manual",
+      "displayName": "Manual"
+    }
+  ],
+  "items": [
+    {
+      "id": 1,
+      "sourceKey": "openclaw",
+      "externalId": "evt_001",
+      "externalVersion": "1",
+      "projectKey": "xassistant",
+      "domain": "dev",
+      "title": "OpenClaw Integration Sync",
+      "description": "Discussing the new schedule system",
+      "startTime": "2026-03-04T10:00:00Z",
+      "endTime": "2026-03-04T11:00:00Z",
+      "status": "scheduled",
+      "type": "meeting",
+      "tags": [
+        "review",
+        "#focus"
+      ],
+      "hash": "304526b5154502ae931412b5e92a8c16",
+      "createdAt": "2026-03-03T15:47:30.458Z",
+      "updatedAt": "2026-03-03T15:47:30.458Z",
+      "lastSyncedAt": "2026-03-03T15:47:30.458Z"
+    },
+    {
+      "id": 2,
+      "sourceKey": "openclaw",
+      "externalId": "evt_002",
+      "externalVersion": "1",
+      "projectKey": "xassistant",
+      "domain": "dev",
+      "title": "Protocol Deadline",
+      "description": "Deadline for handover protocol",
+      "startTime": "2026-03-05T18:00:00Z",
+      "endTime": "2026-03-05T19:00:00Z",
+      "status": "scheduled",
+      "type": "deadline",
+      "hash": "2caa02b0eddb6fb5cbff56b3cbf1d8aa",
+      "createdAt": "2026-03-03T15:47:30.491Z",
+      "updatedAt": "2026-03-03T15:47:30.491Z",
+      "lastSyncedAt": "2026-03-03T15:47:30.491Z"
+    },
+    {
+      "id": 3,
+      "sourceKey": "openclaw",
+      "externalId": "evt_003",
+      "externalVersion": "1",
+      "projectKey": "none",
+      "domain": "life",
+      "title": "Lunch with team",
+      "description": "Social lunch",
+      "startTime": "2026-03-04T12:00:00Z",
+      "endTime": "2026-03-04T13:00:00Z",
+      "status": "scheduled",
+      "type": "social",
+      "hash": "255ef3c52bb06cb349dbfbdbb8108c91",
+      "createdAt": "2026-03-03T15:47:30.493Z",
+      "updatedAt": "2026-03-03T15:47:30.493Z",
+      "lastSyncedAt": "2026-03-03T15:47:30.493Z"
+    }
+  ]
+}

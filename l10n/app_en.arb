@@ -1,0 +1,769 @@
+{
+  "@@locale": "en",
+  "@@last_modified": "2026-03-08",
+  "appTitle": "XAssistant",
+  "appSubtitle": "AI Assistant for xassistant",
+
+  "navHome": "Home",
+  "navTasks": "Tasks",
+  "navSchedule": "Schedule",
+  "navMessages": "Messages",
+  "navSettings": "Settings",
+
+  "settings": "Settings",
+  "connection": "Connection",
+  "pairNewDevice": "Pair New Device",
+  "setManualProxy": "Set Manual Proxy",
+  "bypassPairingHint": "Bypass pairing to connect directly",
+  "connectedDevice": "Connected Device",
+  "deviceInfo": "{deviceName} ({ip}:{port})",
+  "@deviceInfo": {
+    "placeholders": {
+      "deviceName": {},
+      "ip": {},
+      "port": {}
+    }
+  },
+  "disconnect": "Disconnect",
+  "connectionMayHaveIssue": "Connection may have an issue",
+  "diagnose": "Diagnose",
+  "connectionDiagnosis": "Connection diagnosis",
+  "checkingConnection": "Checking connection...",
+  "errorLoadingConnection": "Error loading connection",
+  "proxyConfig": "Proxy config",
+  "proxyConfigSubtitle": "Start, stop proxy and manage launch params",
+  "openclawSkills": "OpenClaw skills",
+  "addSkillPath": "Add skill path",
+  "cannotLoadSkillPaths": "Cannot load skill paths",
+  "xAssistantProjects": "XAssistant / Projects",
+  "manageProjects": "Manage projects",
+  "projectsSubtitle": "View, add and edit projects",
+  "projectsCount": "{count} projects",
+  "@projectsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "loading": "Loading...",
+  "voice": "Voice",
+  "textToSpeech": "Text-to-Speech",
+  "readAloud": "Read responses aloud",
+  "speechRate": "Speech rate",
+  "normal": "Normal",
+  "notifications": "Notifications",
+  "systemNotification": "System notification",
+  "systemNotificationSubtitle": "Push when task completes",
+  "viewMessages": "View messages",
+  "viewNotificationHistory": "View in-app notification history",
+  "appearance": "Appearance",
+  "theme": "Theme",
+  "system": "System",
+  "about": "About",
+  "version": "Version",
+  "github": "GitHub",
+  "cancel": "Cancel",
+  "add": "Add",
+  "path": "Path",
+  "pathHint": "/path/to/skills or ~/skills",
+  "disconnectConfirmTitle": "Disconnect",
+  "disconnectConfirmMessage": "Are you sure you want to disconnect from this computer?",
+  "resetPinTitle": "Reset PIN",
+  "resetPinMessage": "Reset will invalidate the old PIN. You need to re-pair with the new PIN.",
+  "currentPin": "Current PIN: {pin}",
+  "@currentPin": {
+    "placeholders": {
+      "pin": {}
+    }
+  },
+  "confirmReset": "Confirm reset",
+  "pinResetSuccess": "PIN reset to: {pin}",
+  "@pinResetSuccess": {
+    "placeholders": {
+      "pin": {}
+    }
+  },
+  "resetFailed": "Reset failed: {error}",
+  "@resetFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "editConnection": "Edit connection",
+  "ipAddress": "IP address",
+  "port": "Port",
+  "pinCode": "PIN code",
+  "pinUseSavedHint": "Use saved PIN (or enter new)",
+  "pinEnterHint": "Enter PIN",
+  "leaveEmptyUseSavedPin": "Leave empty to use saved PIN",
+  "connect": "Connect",
+  "pairFailed": "Failed to pair: {error}",
+  "@pairFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "pleaseFillAllFields": "Please fill all fields",
+  "diagnosisCurrentState": "Current state",
+  "diagnosisSavedIp": "Saved IP",
+  "diagnosisFailCount": "Consecutive failures",
+  "diagnosisFailCountValue": "{count} times",
+  "@diagnosisFailCountValue": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "close": "Close",
+  "rePair": "Re-pair",
+  "refresh": "Refresh",
+  "stateUnknown": "Unknown",
+  "stateConnected": "Connected",
+  "stateConnecting": "Connecting...",
+  "stateNetworkError": "Network error",
+  "stateIpChanged": "IP may have changed",
+  "stateAuthError": "Auth error",
+  "pinCodeReusable": "PIN: {pin} (reusable)",
+  "@pinCodeReusable": {
+    "placeholders": {
+      "pin": {}
+    }
+  },
+  "resetPinTooltip": "Reset PIN",
+  "language": "Language",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+
+  "taskList": "Task list",
+  "taskDetail": "Task detail",
+  "taskNotFound": "Task not found",
+  "addTask": "Add task",
+  "editTask": "Edit task",
+  "save": "Save",
+  "filterAll": "All",
+  "filterPending": "Pending",
+  "filterInProgress": "In progress",
+  "filterCompleted": "Completed",
+  "emptyTasksAll": "No tasks",
+  "emptyTasksPending": "No pending tasks",
+  "emptyTasksInProgress": "No in-progress tasks",
+  "emptyTasksCompleted": "No completed tasks yet",
+
+  "dashboardInProgress": "In progress",
+  "dashboardPending": "Pending",
+  "greetingNight": "Late night 🌙",
+  "greetingMorning": "Good morning ☀️",
+  "greetingNoon": "Good noon 🌤",
+  "greetingAfternoon": "Good afternoon ⛅",
+  "greetingEvening": "Good evening 🌙",
+  "scheduleArrow": "Schedule →",
+  "weekdaySun": "Sun",
+  "weekdayMon": "Mon",
+  "weekdayTue": "Tue",
+  "weekdayWed": "Wed",
+  "weekdayThu": "Thu",
+  "weekdayFri": "Fri",
+  "weekdaySat": "Sat",
+
+  "typeCommand": "Type a command...",
+  "cancelTooltip": "Cancel",
+  "historyTooltip": "History",
+  "notConnectedToServer": "Not connected to server",
+  "waitForConversation": "Please wait for the current conversation to finish",
+  "fixErrors": "Fix errors",
+  "runTests": "Run tests",
+  "explainCode": "Explain code",
+  "quickResponse": "Quick response",
+  "yes": "Yes",
+  "no": "No",
+  "retry": "Retry",
+  "connectionError": "Connection error. Please check your connection.",
+  "disconnectedFromServer": "Disconnected from server.",
+  "reconnect": "Reconnect",
+  "agentBackendError": "Agent backend: {error}",
+  "@agentBackendError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "agentBackendDisconnected": "Agent backend disconnected. Replies may be delayed.",
+  "fixErrorsCommand": "Fix any errors in the current file",
+  "runTestsCommand": "Run the tests",
+  "explainCodeCommand": "Explain this code",
+
+  "commandHistory": "Command history",
+  "clearHistory": "Clear history",
+  "clearHistoryConfirm": "Clear all command history? This cannot be undone.",
+  "noCommandHistory": "No command history yet",
+
+  "messages": "Messages",
+  "noNotifications": "No messages yet",
+  "notificationsHint": "You will get notifications here when tasks complete",
+  "markAllRead": "Mark all read",
+  "markAllReadConfirm": "Mark all messages as read?",
+  "clearMessages": "Clear messages",
+  "clearMessagesConfirm": "Clear all messages? This cannot be undone.",
+  "confirm": "Confirm",
+  "clear": "Clear",
+
+  "connectToComputer": "Connect to computer",
+  "startProxyFirst": "Start/configure proxy first",
+  "proxyConfigNav": "Proxy config",
+  "scanQr": "Scan QR",
+  "manual": "Manual",
+  "connecting": "Connecting...",
+  "macosProxyHint": "On macOS: start proxy from proxy config page first",
+  "goToProxyConfig": "Go to proxy config",
+  "scanQrHint": "Scan the QR code displayed by the proxy service",
+  "runProxyHint": "Run \"go run . -workdir /path/to/project\" in the proxy folder",
+  "proxyNotStartedTitle": "Proxy not started?",
+  "proxyNotStartedSubtitle": "Start proxy from proxy config page first, then enter connection details",
+  "enterConnectionDetails": "Enter connection details",
+  "findOnComputer": "Find these on your computer when running the proxy service",
+  "computerIp": "Computer IP address",
+  "ipHint": "192.168.1.100",
+  "pinHint": "123456",
+  "directProxyOverride": "Direct proxy override",
+  "directProxyOverrideMessage": "Bypass pairing and connect directly. (Use only if pairing fails)",
+  "connectDirectly": "Connect directly",
+  "connectionSuccess": "Connected, skills and projects synced",
+  "connectionFailed": "Connection failed: {error}",
+  "@connectionFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "manualProxyUrl": "Manual proxy URL",
+
+  "initializing": "Initializing...",
+  "checkingConnectionStatus": "Checking connection...",
+  "connectingTo": "Connecting to {ip}...",
+  "@connectingTo": {
+    "placeholders": {
+      "ip": {}
+    }
+  },
+  "tokenExpiredRepairing": "Token expired, re-pairing...",
+  "connectionFailedRepair": "Connection failed, attempting re-pair...",
+  "connectionFailedPairAgain": "Connection failed, please pair again",
+
+  "proxyConfigTitle": "Proxy config",
+  "proxyConfigMacOnly": "Proxy config is macOS only",
+  "systemSettings": "System settings",
+  "proxyConnectionInfo": "Proxy connection (IP / port / PIN)",
+  "ipLabel": "IP",
+  "portLabel": "Port",
+  "pinOptional": "PIN (6 digits)",
+  "pinOptionalHint": "Fill to auto-pair and connect on start",
+  "afterStartUseInfo": "After start, the above info will be used to connect automatically.",
+  "pleaseStartProxyFirst": "Please start proxy first",
+  "noSavedConnectionHint": "No saved connection. Start proxy on this page first, then tap \"Go to pair\" to scan QR.",
+  "proxyRunning": "Proxy running",
+  "proxyChecking": "Checking...",
+  "proxyNotRunning": "Proxy not running",
+  "detect": "Detect",
+  "proxyPathLabel": "Proxy path",
+  "proxyPathHint": "Leave empty to use in-app proxy",
+  "startProxy": "Start proxy",
+  "startingProxy": "Starting proxy...",
+  "startingProxyConnect": "Starting proxy, connecting...",
+  "proxyStartChecking": "Proxy starting, checking...",
+  "startFailed": "Start failed: {error}",
+  "@startFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "proxyStopped": "Proxy stopped",
+  "stopProxy": "Stop proxy",
+  "stopFailed": "Stop failed",
+  "launchCommand": "Launch command (for debugging)",
+  "copy": "Copy",
+  "copiedToClipboard": "Copied to clipboard",
+  "goToPair": "Go to pair (scan after proxy starts)",
+  "enterApp": "Enter app",
+  "loadFailed": "Load failed: {error}",
+  "@loadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "openInCursor": "Opened in Cursor",
+  "cannotOpenCursor": "Cannot open project, config may be missing",
+  "selectDirectory": "Select directory",
+  "proxyLaunchParams": "Proxy launch params",
+  "enableOpenClaw": "Enable OpenClaw",
+  "openClawToken": "OpenClaw token",
+  "openClawUrlOptional": "OpenClaw URL (optional)",
+  "allowLocalNoAuth": "Allow local no-auth",
+  "skillsPath": "Skills path",
+  "workdirOptional": "Work dir (optional)",
+  "saveLaunchParams": "Save launch params",
+  "launchParamsSaved": "Launch params saved",
+  "noLogPath": "Log path not set",
+  "proxyPathNotSet": "Proxy path not configured",
+  "logNotGenerated": "Log file not yet generated: {path}",
+  "@logNotGenerated": {
+    "placeholders": {
+      "path": {}
+    }
+  },
+  "logOpened": "Opened log with default app",
+  "viewLog": "View log",
+  "proxyStatusNotDetected": "Proxy status not detected",
+  "proxyStartSuccess": "Proxy running, connecting...",
+  "proxyStartWaitCheck": "Proxy may still be starting, tap \"Detect\" later",
+  "pleasePairFirst": "Pair or set connection first, then detect/start proxy",
+  "loadingConnection": "Loading connection...",
+  "startProxyPleaseWait": "Starting proxy, please wait...",
+  "autoPairedConnected": "Auto-paired and connected",
+  "autoConnectFailed": "Auto-connect failed, please pair manually",
+  "logPathLabel": "Log path",
+  "logPathHint": "Leave empty for default ~/Library/Logs/xassistant-proxy/proxy.log",
+
+  "delete": "Delete",
+  "deleteTask": "Delete task",
+  "deleteTaskConfirmMessage": "Delete \"{title}\"? This cannot be undone.",
+  "@deleteTaskConfirmMessage": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "cancelTask": "Cancel task",
+  "submitFeedback": "Submit feedback",
+  "feedbackSubmitted": "Feedback submitted",
+  "deleteMessage": "Delete message",
+  "deleteMessageConfirm": "Delete this message?",
+  "selectTaskProject": "Select project for task",
+  "startingCursorAgent": "Starting Cursor Agent...",
+  "startingCcrAgent": "Starting CCR Agent...",
+  "openInCursorLabel": "Agent Status",
+  "planOnly": "Plan only",
+  "confirmTaskSkipPlan": "Confirm task (skip Plan)",
+  "startExecution": "Start execution",
+  "submitLabel": "Submit",
+  "runTestLabel": "Run tests",
+  "markComplete": "Mark complete",
+  "openingIterm2": "Opening iTerm2...",
+  "cannotOpenTmux": "Cannot open tmux, ensure Agent is running",
+  "commandCopied": "Command copied: {command}",
+  "@commandCopied": {
+    "placeholders": {
+      "command": {}
+    }
+  },
+  "generatingPlan": "Generating plan...",
+  "generateFailed": "Generate failed: {error}",
+  "@generateFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "executingPhase": "Executing {phase} phase...",
+  "@executingPhase": {
+    "placeholders": {
+      "phase": {}
+    }
+  },
+  "phaseExecutionFailed": "Phase execution failed: {error}",
+  "@phaseExecutionFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "phaseSwitchFailed": "Phase switch failed",
+  "phaseUpdated": "Phase updated to: {phase}",
+  "@phaseUpdated": {
+    "placeholders": {
+      "phase": {}
+    }
+  },
+  "statusUpdated": "Status updated to: {status}",
+  "@statusUpdated": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "startingAgent": "Starting {backend} Agent...",
+  "@startingAgent": {
+    "placeholders": {
+      "backend": {}
+    }
+  },
+  "codeCopied": "Code copied",
+  "developmentCapabilities": "Development capabilities",
+  "noProjects": "No projects",
+  "addProjectToUse": "Add project to use capabilities",
+  "requiredInfo": "Required",
+  "optionalInfo": "Optional",
+  "saveFailed": "Save failed: {error}",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "notConnectedPleaseConnect": "Not connected. Please connect in Settings first.",
+  "taskCompletedTitle": "Task completed",
+  "taskFailedTitle": "Task failed",
+  "taskProgressTitle": "Task progress",
+
+  "taskTitle": "Task title",
+  "taskTitleHint": "Enter task name...",
+  "taskTitleRequired": "Please enter task title",
+  "descriptionOptional": "Description (optional)",
+  "descriptionHint": "Add task description...",
+  "project": "Project",
+  "priority": "Priority",
+  "source": "Source",
+  "sourceManual": "Manual",
+  "sourceOpenClaw": "OpenClaw",
+  "sourceCursor": "Cursor",
+  "sourceSkill": "Skill",
+  "agentOptional": "Execution Agent (optional)",
+  "agentCursor": "Cursor",
+  "agentCcr": "CCR",
+  "agentClaude": "Claude",
+  "deadlineOptional": "Deadline (optional)",
+  "selectDate": "Select date",
+  "selectTime": "Select time",
+  "projectKeyManualHint": "Project key (fill when no projects registered)",
+  "projectKeyExample": "e.g. xassistant",
+  "noProjectSelected": "— None —",
+  "projectKeyFallbackHint": "Project key (fill when load failed)",
+
+  "cursorAgentStartedInTmux": "Cursor Agent started in tmux",
+  "ccrAgentStartedInTmux": "CCR Agent started in tmux",
+  "startFailedShort": "Start failed",
+  "runWithCursor": "Run with Cursor",
+  "runWithCcr": "Run with CCR",
+  "viewAgent": "View Agent",
+  "preferredAgent": "Preferred Agent",
+  "projectKey": "Project key",
+  "createdAt": "Created at",
+  "deadline": "Deadline",
+  "completedAt": "Completed at",
+  "executionPlan": "Execution plan",
+  "planLoadFailed": "Failed to load plan (ensure proxy --workdir matches task plan path)",
+  "description": "Description",
+  "feedback": "Feedback",
+  "completed": "Completed",
+  "hasIssue": "Has issue",
+  "describeIssue": "Describe the issue...",
+  "addNoteOptional": "Add note (optional)...",
+  "phasePlan": "Plan",
+  "phaseCode": "Code",
+  "phaseTest": "Test",
+  "phaseDone": "Done",
+  "statusPhaseFormat": "Status: {status}{phase}",
+  "@statusPhaseFormat": {
+    "placeholders": {
+      "status": {},
+      "phase": {}
+    }
+  },
+  "statusLabel": "Status",
+  "phaseLabel": "Phase",
+  "changePhase": "Change phase",
+  "changeStatus": "Change status",
+  "executionUses": "This run uses:",
+  "ccrExecute": "Run with CCR",
+  "cursorExecute": "Run with Cursor",
+  "retryCcr": "Retry CCR",
+  "retryCursor": "Retry Cursor",
+
+  "messageCount": "{count} messages",
+  "@messageCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "justNow": "Just now",
+  "todayAt": "Today {time}",
+  "@todayAt": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "tomorrow": "Tomorrow",
+  "yesterday": "Yesterday",
+
+  "unknownError": "Unknown error",
+  "proxySection": "Proxy",
+  "proxyStartSuccessSnack": "Proxy running, connecting...",
+  "proxyStartWaitSnack": "Proxy may still be starting, tap \"Detect\" later",
+  "pleasePairOrConfigThenDetect": "Pair or set connection first, then detect/start proxy",
+  "proxyStatusNotDetectedShort": "Status not detected",
+  "proxyCheckingShort": "Checking...",
+  "proxyRunningShort": "Proxy running",
+  "proxyNotRunningShort": "Proxy not running",
+  "detectFailed": "Detect failed",
+  "detectLabel": "Detect",
+  "launchParamsSavedSnack": "Launch params saved",
+  "proxyPathLabelShort": "Proxy path",
+  "proxyPathHintLong": "/path/to/xassistant-proxy or proxy executable path",
+  "startProxyPleaseWaitSnack": "Starting proxy, please wait...",
+  "startProxyLabel": "Start proxy",
+  "loadingConnectionTitle": "Loading connection...",
+  "loadFailedWithError": "Load failed: {error}",
+  "@loadFailedWithError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "proxyLaunchParamsTitle": "Proxy launch params",
+  "enableOpenClawTitle": "Enable OpenClaw",
+  "enableOpenClawSubtitle": "--openclaw",
+  "openClawTokenLabel": "OpenClaw Token",
+  "openClawTokenHint": "--openclaw-token",
+  "openClawUrlLabel": "OpenClaw URL (optional)",
+  "openClawUrlHint": "--openclaw-url",
+  "allowLocalNoAuthTitle": "Allow local no-auth",
+  "allowLocalNoAuthSubtitle": "--allow-local-no-auth (skill calls /api/tasks)",
+  "skillsPathLabel": "Skills path",
+  "skillsPathHint": "--skills-path, e.g. ../skills",
+  "selectDirectoryLabel": "Select directory",
+  "workdirLabel": "Work dir (optional)",
+  "workdirHint": "--workdir",
+  "saveLaunchParamsLabel": "Save launch params",
+  "versionPlaceholder": "1.0.0",
+
+  "projectCreated": "Project created",
+  "projectUpdated": "Project updated",
+  "saveFailedWithError": "Save failed: {error}",
+  "editProject": "Edit project",
+  "addProject": "Add project",
+  "requiredInfoTitle": "Required",
+  "requiredInfoSubtitle": "Project key, name and path are required",
+  "projectKeyLabel": "Project key",
+  "projectKeyHint": "e.g. my_app",
+  "projectKeyHelper": "Cannot change after creation, used to identify project",
+  "projectNameLabel": "Project name",
+  "projectNameHint": "e.g. My App",
+  "enterProjectKey": "Please enter project key",
+  "enterProjectName": "Please enter project name",
+  "projectPathLabel": "Project path",
+  "projectPathHint": "e.g. /Users/xxx/workspace/my_app",
+  "projectPathHelper": "Local absolute path to project root",
+  "enterProjectPath": "Please enter project path",
+  "optionalInfoTitle": "Optional",
+  "optionalInfoSubtitle": "Type, tech stack, owner, etc.",
+  "typeOptionalLabel": "Type (optional)",
+  "typeOptionalHint": "e.g. backend-service, tool",
+  "techStackLabel": "Tech stack (optional)",
+  "techStackHint": "e.g. Flutter, Dart, Go (comma separated)",
+  "ownerLabel": "Owner (optional)",
+  "ownerHint": "e.g. John",
+  "statusOptionalLabel": "Status (optional)",
+  "statusOptionalHint": "e.g. active, archived",
+  "descriptionOptionalLabel": "Description (optional)",
+  "descriptionOptionalHint": "Brief project description",
+  "saving": "Saving…",
+  "saveChanges": "Save changes",
+  "createProject": "Create project",
+
+  "selectCapabilityToRun": "Select capability to run",
+  "registeredProjects": "Registered projects",
+  "addLabel": "Add",
+  "selectExecutor": "Select executor",
+  "projectLabel": "Project",
+  "taskTitleLabel": "Task title",
+  "taskTitleExample": "e.g. Optimize inventory sync API",
+  "requirementLabel": "Requirement",
+  "requirementHint": "Describe the feature in detail",
+  "cancelLabel": "Cancel",
+  "executeLabel": "Execute",
+  "pleaseEnterTaskTitle": "Please enter task title",
+  "notConnectedToProxy": "Not connected to proxy server",
+  "executing": "Executing...",
+  "taskCreatedSnack": "Task created: {taskId}",
+  "@taskCreatedSnack": {
+    "placeholders": {
+      "taskId": {}
+    }
+  },
+  "sentToAgentSnack": "Sent to Agent: {id}",
+  "@sentToAgentSnack": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "executeFailedSnack": "Execute failed: {error}",
+  "@executeFailedSnack": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "addProjectTitle": "Add project",
+  "projectKeyKeyLabel": "Project key",
+  "projectKeyKeyHint": "e.g. my_project",
+  "projectNameKeyLabel": "Project name",
+  "projectNameKeyHint": "e.g. Inventory system",
+  "projectPathKeyLabel": "Project path",
+  "projectPathKeyHint": "/path/to/project",
+  "descriptionKeyLabel": "Description (optional)",
+  "pleaseFillKeyNamePath": "Please fill project key, name and path",
+  "addFailedSnack": "Add failed: {error}",
+  "@addFailedSnack": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deleteProjectTitle": "Delete project?",
+  "deleteProjectConfirm": "Delete project \"{key}\"?",
+  "@deleteProjectConfirm": {
+    "placeholders": {
+      "key": {}
+    }
+  },
+  "deleteLabel": "Delete",
+  "deleteFailedSnack": "Delete failed: {error}",
+  "@deleteFailedSnack": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "pleaseAddProjectFirst": "Please add project first",
+
+  "scheduleTitle": "Schedule",
+  "byDay": "By day",
+  "weekView": "Week",
+  "noScheduleToday": "No schedule today",
+  "deleteScheduleTitle": "Delete schedule",
+  "deleteScheduleConfirm": "Delete \"{title}\"?",
+  "@deleteScheduleConfirm": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "deleteLabelRed": "Delete",
+  "weekdayShort": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+  "dateFormatFull": "{weekday}, {month}/{day}",
+  "@dateFormatFull": {
+    "placeholders": {
+      "weekday": {},
+      "month": {},
+      "day": {}
+    }
+  },
+  "eventTypeMeeting": "Meeting",
+  "eventTypeDeadline": "Deadline",
+  "eventTypeSocial": "Social",
+  "eventTypeReview": "Review",
+  "eventTypeOther": "Other",
+  "noItems": "No items",
+  "editSchedule": "Edit schedule",
+  "newSchedule": "New schedule",
+  "titleLabel": "Title",
+  "typeLabel": "Type",
+  "startTimeLabel": "Start time (YYYY-MM-DDTHH:mm)",
+  "endTimeLabel": "End time",
+  "descriptionPlaceholder": "Description (location, notes, attendees)",
+  "projectKeyPlaceholder": "Project (projectKey)",
+  "createLabel": "Create",
+
+  "projectSkillsTitle": "Project skills",
+  "developmentCapabilitiesTooltip": "Development capabilities",
+  "allSkillsTooltip": "All skills",
+  "noSkillsYet": "No skills yet",
+  "addSkillPathInSettings": "Add skill path in Settings",
+  "skillsLabel": "Skills",
+  "retryLabel": "Retry",
+  "loadFailedWithColon": "Load failed: {error}",
+  "addFirstProject": "Add first project",
+  "editTooltip": "Edit",
+  "deleteTooltip": "Delete",
+  "loadProjectsFailed": "Load projects failed: {error}",
+  "deleteProjectTitleShort": "Delete project",
+  "deleteProjectConfirmName": "Delete project \"{name}\"?",
+  "@deleteProjectConfirmName": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "projectDeletedSnack": "Project deleted: {name}",
+  "@projectDeletedSnack": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "useLabel": "Use",
+  "notConnectedToProxyShort": "Not connected to Proxy",
+  "errorPrefix": "Error: ",
+
+  "manageProjectsTitle": "Manage Projects",
+  "noProjectsFound": "No projects found.",
+  "errorColon": "Error: {error}",
+  "@errorColon": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deleteProjectConfirmFull": "Are you sure you want to delete \"{name}\" (Key: {key})?",
+  "@deleteProjectConfirmFull": {
+    "placeholders": {
+      "name": {},
+      "key": {}
+    }
+  },
+  "cancelLabelCap": "Cancel",
+  "projectDeletedSnackFull": "Project deleted: {name}",
+  "deleteFailedSnackFull": "Failed to delete project: {error}",
+  "deleteLabelCap": "Delete",
+
+  "skillsScreenTitle": "Skills",
+  "noSkillsYetShort": "No skills yet",
+  "addSkillPathInSettingsShort": "Add skill path in Settings",
+
+  "copiedToClipboardShort": "Copied to clipboard",
+  "codeCopiedShort": "Code copied",
+
+  "ipPortHint": "127.0.0.1",
+  "portHintShort": "8443",
+  "pinDash": "—",
+
+  "minutesAgo": "{count} min ago",
+  "@minutesAgo": { "placeholders": { "count": {} } },
+  "hoursAgo": "{count} hr ago",
+  "@hoursAgo": { "placeholders": { "count": {} } },
+  "daysAgo": "{count} days ago",
+  "@daysAgo": { "placeholders": { "count": {} } },
+  "daysLater": "In {count} days",
+  "@daysLater": { "placeholders": { "count": {} } },
+
+  "taskStatusPending": "Pending",
+  "taskStatusConfirmed": "Confirmed",
+  "taskStatusInProgress": "In Progress",
+  "taskStatusPlanned": "Planned",
+  "taskStatusCompleted": "Completed",
+  "taskStatusCancelled": "Cancelled",
+  "taskStatusFailed": "Failed",
+  "taskStatusPlanning": "Planning",
+  "taskStatusCoding": "Coding",
+  "taskStatusTesting": "Testing",
+  "taskStatusSubmitting": "Submitting",
+  "taskPriorityP0": "P0 Critical",
+  "taskPriorityP1": "P1 High",
+  "taskPriorityP2": "P2 Medium",
+  "taskPriorityP3": "P3 Low",
+  "feedbackTypeDone": "Completed",
+  "feedbackTypeHasIssue": "Has Issue",
+  "overdue": "Overdue",
+  "untitledConversation": "Untitled conversation",
+
+  "scheduleStatusScheduled": "Scheduled",
+  "scheduleStatusInProgress": "In Progress",
+  "scheduleStatusCompleted": "Completed",
+  "scheduleStatusCancelled": "Cancelled",
+  "scheduleStatusLabel": "Status",
+  "changeScheduleStatus": "Change Status",
+
+  "scheduleStatusChangeSuccess": "Status updated to \"{status}\"",
+  "@scheduleStatusChangeSuccess": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "scheduleStatusChangeFailed": "Failed to update status",
+
+  "scheduleDetailTitle": "Schedule detail",
+  "linkedTasks": "Linked tasks",
+  "noLinkedTasks": "No linked tasks"
+}

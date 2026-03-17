@@ -1,0 +1,53 @@
+{
+  "name": "software-dev-agent",
+  "version": "2.0.0",
+  "description": "Reorganized software development agent with 3 core skills and unified execution backend",
+  "settings": {
+    "defaultBackend": "claude",
+    "taskApiUrl": "http://localhost:8443",
+    "taskSystemUrl": "http://localhost:3001",
+    "pollingInterval": 30000,
+    "executionTimeoutMs": 900000,
+    "planTimeoutMs": 180000,
+    "cursorCliTimeoutMs": 900000,
+    "cursorCliCommand": "agent",
+    "openclawGateway": {
+      "url": "http://127.0.0.1:18789",
+      "token": "",
+      "agentId": "work"
+    },
+    "projectBasePath": "$HOME/workspace",
+    "noCommitUntilVerified": true,
+    "executionLogDir": "",
+    "claudeCliCommand": "ccr",
+    "useTmuxForBackend": true
+  },
+  "database": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "",
+    "database": "software_dev_agent"
+  },
+  "lark": {
+    "appId": "",
+    "appSecret": "",
+    "userAccessToken": "",
+    "documentId": "",
+    "webhookUrl": "",
+    "notifications": {
+      "taskUpdates": true,
+      "errors": true,
+      "completions": true
+    }
+  },
+  "projects": {
+    "registry": {
+      "xassistant": {
+        "path": "../..",
+        "name": "xassistant"
+      }
+    }
+  },
+  "planIterationRounds": 2
+}

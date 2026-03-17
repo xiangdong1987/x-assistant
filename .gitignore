@@ -1,0 +1,80 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Proxy binary (built by macos/scripts/build_proxy.sh when run from terminal)
+/proxy/xassistant-proxy
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+/_bmad-output
+/_bmad
+/.cursor
+node_modules/
+logs/
+/proxy/data/tasks.json
+.claude/
+.env
+skills/software-dev/.env
+skills/software-dev/data/tasks.json
+
+# Proxy 本地配置（含本机路径，使用 *.example.json 复制后修改）
+proxy/config/projects.json
+proxy/config/skill_paths.json
+
+# 内部计划文档（含本机路径等，不随开源发布）
+docs/plan-*.md
+
+# 技能：data 目录下均为本地/运行时数据，不提交到 git（schedules.json、links.json、events/*.json 等）
+skills/schedule/data/*
+skills/schedule/data/events/*
+!skills/schedule/data/events/.gitkeep
+skills/software-dev/data/task-definitions/*
+!skills/software-dev/data/task-definitions/.gitkeep
+
+# 技能：不纳入版本控制（内部/私有）
+skills/db-query/
+skills/italia-company-lookup/
+
+ios/Podfile.lock
+macos/Podfile.lock
+pubspec.lock

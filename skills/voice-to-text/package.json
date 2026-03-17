@@ -1,0 +1,9 @@
+{
+  "name": "voice-to-text-skill",
+  "version": "1.0.0",
+  "description": "Google Speech-to-Text transcription utility for OpenClaw skills",
+  "main": "scripts/transcribe.js",
+  "scripts": {
+    "transcribe": "node scripts/transcribe.js"
+  }
+}
