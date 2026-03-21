@@ -38,6 +38,8 @@ class _ProxyConfigScreenState extends ConsumerState<ProxyConfigScreen> {
   bool _connectDefaultsLoaded = false;
   bool _openclaw = false;
   bool _allowLocalNoAuth = false;
+  bool _voiceEnabled = false;
+  final _voiceModelsDirController = TextEditingController();
   bool _configExpanded = true;
   /// 上次点击「启动代理」时使用的完整命令，用于界面展示与复制排查
   String? _lastLaunchCommand;
@@ -56,6 +58,7 @@ class _ProxyConfigScreenState extends ConsumerState<ProxyConfigScreen> {
     _skillsPathController.dispose();
     _workdirController.dispose();
     _logPathController.dispose();
+    _voiceModelsDirController.dispose();
     super.dispose();
   }
 
@@ -105,6 +108,8 @@ class _ProxyConfigScreenState extends ConsumerState<ProxyConfigScreen> {
       _skillsPathController.text = config.skillsPath;
       _workdirController.text = config.workdir;
       _logPathController.text = config.logPath.isEmpty ? defaultProxyLogPath : config.logPath;
+      _voiceEnabled = config.voiceEnabled;
+      _voiceModelsDirController.text = config.voiceModelsDir;
       _configLoaded = true;
       setState(() {});
     }
@@ -119,6 +124,8 @@ class _ProxyConfigScreenState extends ConsumerState<ProxyConfigScreen> {
       skillsPath: _skillsPathController.text.trim(),
       workdir: _workdirController.text.trim(),
       logPath: _logPathController.text.trim(),
+      voiceEnabled: _voiceEnabled,
+      voiceModelsDir: _voiceModelsDirController.text.trim(),
     );
   }
 
@@ -632,6 +639,26 @@ class _ProxyConfigScreenState extends ConsumerState<ProxyConfigScreen> {
             title: Text(l10n.allowLocalNoAuth),
             contentPadding: EdgeInsets.zero,
           ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            value: _voiceEnabled,
+            onChanged: (v) => setState(() => _voiceEnabled = v),
+            title: const Text('语音功能 (Voice Pipeline)'),
+            subtitle: const Text('启用 VAD + STT + TTS，需要先下载模型'),
+            contentPadding: EdgeInsets.zero,
+          ),
+          if (_voiceEnabled) ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _voiceModelsDirController,
+              decoration: const InputDecoration(
+                labelText: '模型目录 (Voice Models Dir)',
+                hintText: '留空使用默认 ./models',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,

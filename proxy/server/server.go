@@ -21,6 +21,7 @@ import (
 	"claude-voice-proxy/projects"
 	"claude-voice-proxy/skills"
 	"claude-voice-proxy/tasks"
+	"claude-voice-proxy/voice"
 	"claude-voice-proxy/websocket"
 
 	qrcode "github.com/skip2/go-qrcode"
@@ -50,11 +51,13 @@ type Server struct {
 	runningPipelines   map[string]bool
 	runningPipelinesMu sync.Mutex
 	// Interval configurations
-	taskSyncInterval   time.Duration
+	taskSyncInterval     time.Duration
 	phaseWatcherInterval time.Duration
+	// Voice pipeline (nil when disabled)
+	voiceModels *voice.VoiceModels
 }
 
-func New(host string, port int, workDir string, skillsPath string, mcpConfig *mcp.Config, openclawConfig *openclaw.Config, allowLocalNoAuth bool, taskSyncInterval int, phaseWatcherInterval int) *Server {
+func New(host string, port int, workDir string, skillsPath string, mcpConfig *mcp.Config, openclawConfig *openclaw.Config, allowLocalNoAuth bool, taskSyncInterval int, phaseWatcherInterval int, voiceConfig *voice.VoiceConfig) *Server {
 	hub := websocket.NewHub()
 	runningPipelines := make(map[string]bool)
 
@@ -125,6 +128,17 @@ func New(host string, port int, workDir string, skillsPath string, mcpConfig *mc
 		s.openclawBridge = openclaw.NewTaskBridge(hub, s.openclawClient, s.taskStore, s.skillManager, skillsPath)
 	}
 
+	// Initialize voice pipeline if enabled (failure is non-fatal)
+	if voiceConfig != nil && voiceConfig.Enabled {
+		if m, err := voice.NewVoiceModels(voiceConfig); err != nil {
+			log.Printf("[Voice] model init failed: %v (voice disabled)", err)
+		} else {
+			s.voiceModels = m
+			log.Printf("[Voice] pipeline ready (VAD=%v STT=%v TTS=%v)",
+				m.HasVAD(), m.HasSTT(), m.HasTTS())
+		}
+	}
+
 	return s
 }
 
@@ -184,6 +198,9 @@ func (s *Server) Start() error {
 		mux.HandleFunc("/api/chat-history", s.handleChatHistoryAPI)
 	}
 	mux.HandleFunc("/ws", s.handleWebSocket)
+	mux.HandleFunc("/api/voice/status", s.handleVoiceStatus)
+	mux.HandleFunc("/voice/ws", s.handleVoiceWebSocket) // handler returns 503 when models not loaded
+	mux.HandleFunc("/voice-test", s.handleVoiceTestPage)
 
 	// Create HTTP server
 	addr := fmt.Sprintf("%s:%d", s.host, s.port)
@@ -214,6 +231,11 @@ func (s *Server) Shutdown() {
 	// Stop OpenClaw client
 	if s.openclawClient != nil {
 		s.openclawClient.Stop()
+	}
+
+	// Close voice models
+	if s.voiceModels != nil {
+		s.voiceModels.Close()
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

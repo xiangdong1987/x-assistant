@@ -18,14 +18,35 @@ type Hub struct {
 
 	// Mutex for thread-safe operations
 	mu sync.RWMutex
+
+	// deviceCallbacks allows non-Hub consumers (e.g. voice sessions) to receive
+	// messages targeted at a specific deviceID without being registered as a Client.
+	deviceCallbacks   map[string]func([]byte)
+	deviceCallbacksMu sync.RWMutex
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		clients:    make(map[*Client]bool),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		clients:         make(map[*Client]bool),
+		register:        make(chan *Client),
+		unregister:      make(chan *Client),
+		deviceCallbacks: make(map[string]func([]byte)),
 	}
+}
+
+// RegisterDeviceCallback registers a callback to receive messages for deviceID.
+// Used by voice sessions to intercept AI responses without entering the Hub client list.
+func (h *Hub) RegisterDeviceCallback(deviceID string, fn func([]byte)) {
+	h.deviceCallbacksMu.Lock()
+	h.deviceCallbacks[deviceID] = fn
+	h.deviceCallbacksMu.Unlock()
+}
+
+// UnregisterDeviceCallback removes the callback for deviceID.
+func (h *Hub) UnregisterDeviceCallback(deviceID string) {
+	h.deviceCallbacksMu.Lock()
+	delete(h.deviceCallbacks, deviceID)
+	h.deviceCallbacksMu.Unlock()
 }
 
 func (h *Hub) Run() {
@@ -84,9 +105,9 @@ func (h *Hub) Broadcast(data []byte) {
 
 // SendToDevice sends a message only to the client with the given device ID.
 // Used for conversation thread isolation: responses go only to the requesting device.
+// If no Hub client matches, falls back to a registered device callback (e.g. voice session).
 func (h *Hub) SendToDevice(deviceID string, data []byte) {
 	h.mu.RLock()
-	defer h.mu.RUnlock()
 	for client := range h.clients {
 		if client.deviceID == deviceID {
 			select {
@@ -94,7 +115,17 @@ func (h *Hub) SendToDevice(deviceID string, data []byte) {
 			default:
 				log.Printf("[Hub] Dropped targeted message for device %s: buffer full", deviceID)
 			}
+			h.mu.RUnlock()
 			return
 		}
+	}
+	h.mu.RUnlock()
+
+	// Fall back to device callback (non-Hub consumers such as voice sessions)
+	h.deviceCallbacksMu.RLock()
+	cb := h.deviceCallbacks[deviceID]
+	h.deviceCallbacksMu.RUnlock()
+	if cb != nil {
+		cb(data)
 	}
 }

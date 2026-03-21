@@ -23,6 +23,8 @@ class ProxyLaunchConfig {
     this.skillsPath = '',
     this.workdir = '',
     this.logPath = '',
+    this.voiceEnabled = false,
+    this.voiceModelsDir = '',
   });
 
   final bool openclaw;
@@ -33,6 +35,10 @@ class ProxyLaunchConfig {
   final String workdir;
   /// 日志文件路径；非空时 proxy 将日志追加写入该文件，便于查看
   final String logPath;
+  /// 语音功能开关
+  final bool voiceEnabled;
+  /// 语音模型目录路径（空则使用 proxy 默认 ./models）
+  final String voiceModelsDir;
 
   Map<String, dynamic> toJson() => {
         'openclaw': openclaw,
@@ -42,6 +48,8 @@ class ProxyLaunchConfig {
         'skillsPath': skillsPath,
         'workdir': workdir,
         'logPath': logPath,
+        'voiceEnabled': voiceEnabled,
+        'voiceModelsDir': voiceModelsDir,
       };
 
   factory ProxyLaunchConfig.fromJson(Map<String, dynamic> json) {
@@ -53,6 +61,8 @@ class ProxyLaunchConfig {
       skillsPath: json['skillsPath'] as String? ?? '',
       workdir: json['workdir'] as String? ?? '',
       logPath: json['logPath'] as String? ?? '',
+      voiceEnabled: json['voiceEnabled'] as bool? ?? false,
+      voiceModelsDir: json['voiceModelsDir'] as String? ?? '',
     );
   }
 
@@ -64,6 +74,8 @@ class ProxyLaunchConfig {
     String? skillsPath,
     String? workdir,
     String? logPath,
+    bool? voiceEnabled,
+    String? voiceModelsDir,
   }) {
     return ProxyLaunchConfig(
       openclaw: openclaw ?? this.openclaw,
@@ -73,6 +85,8 @@ class ProxyLaunchConfig {
       skillsPath: skillsPath ?? this.skillsPath,
       workdir: workdir ?? this.workdir,
       logPath: logPath ?? this.logPath,
+      voiceEnabled: voiceEnabled ?? this.voiceEnabled,
+      voiceModelsDir: voiceModelsDir ?? this.voiceModelsDir,
     );
   }
 }
@@ -180,6 +194,10 @@ class ProxyLaunchService {
     if (config.workdir.isNotEmpty) args.addAll(['-workdir', config.workdir]);
     final logPath = config.logPath.trim().isNotEmpty ? config.logPath.trim() : defaultLogPath;
     if (logPath.isNotEmpty) args.addAll(['-log', logPath]);
+    if (config.voiceEnabled) {
+      args.add('-voice');
+      if (config.voiceModelsDir.isNotEmpty) args.addAll(['-voice-models-dir', config.voiceModelsDir]);
+    }
     return [executablePath, ...args].join(' ');
   }
 
@@ -237,6 +255,12 @@ class ProxyLaunchService {
     final logPath = config.logPath.trim().isNotEmpty ? config.logPath.trim() : defaultProxyLogPath;
     if (logPath.isNotEmpty) {
       args.addAll(['-log', logPath]);
+    }
+    if (config.voiceEnabled) {
+      args.add('-voice');
+      if (config.voiceModelsDir.isNotEmpty) {
+        args.addAll(['-voice-models-dir', config.voiceModelsDir]);
+      }
     }
 
     final workDir = config.workdir.trim().isNotEmpty

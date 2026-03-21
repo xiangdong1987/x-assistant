@@ -47,5 +47,7 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to scan QR codes for pairing.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires microphone access for voice interaction with the AI assistant.</string>
 </dict>
 </plist>

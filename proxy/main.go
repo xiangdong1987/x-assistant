@@ -15,6 +15,7 @@ import (
 	"claude-voice-proxy/mcp"
 	"claude-voice-proxy/openclaw"
 	"claude-voice-proxy/server"
+	"claude-voice-proxy/voice"
 )
 
 // getEnvInt returns an integer value from environment variable with a default fallback
@@ -63,6 +64,15 @@ func main() {
 	// Interval configuration flags
 	taskSyncInterval := flag.Int("task-sync-interval", 0, "Task status sync interval in seconds (env: TASK_SYNC_INTERVAL)")
 	phaseWatcherInterval := flag.Int("phase-watcher-interval", 0, "Phase watcher interval in seconds (env: PHASE_WATCHER_INTERVAL)")
+
+	// Voice pipeline configuration flags
+	voiceEnabled    := flag.Bool("voice", false, "Enable voice pipeline (Sherpa-ONNX STT/TTS/VAD)")
+	voiceModelsDir  := flag.String("voice-models-dir", "./models", "Directory containing voice model files")
+	voiceVADThresh  := flag.Float64("voice-vad-threshold", 0.5, "VAD speech detection threshold (0.0-1.0)")
+	voiceVADSilence := flag.Int("voice-vad-silence-ms", 500, "Silence duration to end an utterance (ms)")
+	voiceSTTThreads := flag.Int("voice-stt-threads", 2, "STT inference thread count")
+	voiceTTSThreads := flag.Int("voice-tts-threads", 2, "TTS inference thread count")
+	voiceSpeaker    := flag.Int("voice-tts-speaker", 0, "Default TTS speaker ID")
 
 	// Optional PIN to persist before start (for app-launch / launchd with known PIN so client can auto-connect)
 	pinFlag := flag.String("pin", "", "Pairing PIN (6 digits); if set, persisted and used for this and future runs")
@@ -170,8 +180,17 @@ func main() {
 		phaseWatcherIntervalSec = *phaseWatcherInterval
 	}
 
+	// Build voice configuration (flag > env > default)
+	voiceCfg := voice.DefaultVoiceConfig(getEnvString("VOICE_MODELS_DIR", *voiceModelsDir))
+	voiceCfg.Enabled = *voiceEnabled || getEnvString("VOICE_ENABLED", "") == "true"
+	voiceCfg.VADThreshold = float32(*voiceVADThresh)
+	voiceCfg.VADSilenceMs = *voiceVADSilence
+	voiceCfg.STTNumThreads = *voiceSTTThreads
+	voiceCfg.TTSNumThreads = *voiceTTSThreads
+	voiceCfg.DefaultSpeaker = *voiceSpeaker
+
 	// Create and start server
-	srv := server.New(*host, *port, *workDir, *skillsPath, mcpConfig, openclawConfig, *allowLocalNoAuth, taskSyncIntervalSec, phaseWatcherIntervalSec)
+	srv := server.New(*host, *port, *workDir, *skillsPath, mcpConfig, openclawConfig, *allowLocalNoAuth, taskSyncIntervalSec, phaseWatcherIntervalSec, voiceCfg)
 
 	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)

@@ -8,4 +8,10 @@ require (
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 )
 
-require golang.org/x/net v0.17.0 // indirect
+require (
+	github.com/k2-fsa/sherpa-onnx-go v1.12.30 // indirect
+	github.com/k2-fsa/sherpa-onnx-go-linux v1.12.31 // indirect
+	github.com/k2-fsa/sherpa-onnx-go-macos v1.12.31 // indirect
+	github.com/k2-fsa/sherpa-onnx-go-windows v1.12.31 // indirect
+	golang.org/x/net v0.17.0 // indirect
+)

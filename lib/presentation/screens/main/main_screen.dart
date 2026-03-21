@@ -18,6 +18,8 @@ import '../../../providers/task_provider.dart';
 import '../../../providers/skill_provider.dart';
 import '../../widgets/output_panel.dart';
 import '../../widgets/status_indicator.dart';
+import '../../widgets/voice_button.dart';
+import '../../../services/voice_service.dart';
 
 final _logger = Logger(printer: PrettyPrinter(methodCount: 0, noBoxingByDefault: true));
 
@@ -434,8 +436,60 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     await _tts.speak(text);
   }
 
+  // Track last voice state to detect turn completion
+  String _lastVoiceTranscript = '';
+  String _lastVoiceAiText = '';
+
+  void _onVoiceStateChanged(VoiceState? prev, VoiceState next) {
+    // Capture transcript as it comes in
+    if (next.transcript.isNotEmpty) {
+      _lastVoiceTranscript = next.transcript;
+    }
+    if (next.aiText.isNotEmpty) {
+      _lastVoiceAiText = next.aiText;
+    }
+
+    // When a turn completes (status goes from thinking/speaking back to ready/idle),
+    // flush the turn into the chat message list.
+    final wasActive = prev != null &&
+        (prev.status == VoiceStatus.thinking ||
+            prev.status == VoiceStatus.speaking);
+    final isSettling = next.status == VoiceStatus.ready ||
+        next.status == VoiceStatus.idle ||
+        next.status == VoiceStatus.error;
+
+    if (wasActive && isSettling && _lastVoiceTranscript.isNotEmpty) {
+      final userText = _lastVoiceTranscript;
+      final aiText = _lastVoiceAiText;
+      _lastVoiceTranscript = '';
+      _lastVoiceAiText = '';
+
+      setState(() {
+        _messages.add(Message(
+          content: userText,
+          isUser: true,
+          timestamp: DateTime.now(),
+          status: MessageStatus.complete,
+        ));
+        if (aiText.isNotEmpty) {
+          _messages.add(Message(
+            content: aiText,
+            isUser: false,
+            timestamp: DateTime.now(),
+            status: MessageStatus.complete,
+          ));
+        }
+      });
+      _scrollToBottom();
+      _saveToHistory();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Listen for voice turn completion and push messages into chat
+    ref.listen<VoiceState>(voiceServiceProvider, _onVoiceStateChanged);
+
     return Scaffold(
       appBar: AppBar(
         title: const StatusIndicator(),
@@ -492,7 +546,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Text input field
+                  // Voice status panel (shown while voice session is active)
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final voiceState = ref.watch(voiceServiceProvider);
+                      if (!voiceState.isActive) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: VoiceStatusSheet(),
+                      );
+                    },
+                  ),
+
                   // Selected skill chip
                   Consumer(
                     builder: (context, ref, _) {
@@ -511,27 +576,34 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       );
                     },
                   ),
-                  TextField(
-                    controller: _textController,
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)?.typeCommand ?? 'Type a command...',
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.send),
-                        onPressed: _isProcessing
-                            ? null
-                            : () {
-                                if (_textController.text.isNotEmpty) {
-                                  _sendMessage(_textController.text);
-                                }
-                              },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _textController,
+                          decoration: InputDecoration(
+                            hintText: AppLocalizations.of(context)?.typeCommand ?? 'Type a command...',
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.send),
+                              onPressed: _isProcessing
+                                  ? null
+                                  : () {
+                                      if (_textController.text.isNotEmpty) {
+                                        _sendMessage(_textController.text);
+                                      }
+                                    },
+                            ),
+                          ),
+                          enabled: !_isProcessing,
+                          onSubmitted: (text) {
+                            if (text.isNotEmpty && !_isProcessing) {
+                              _sendMessage(text);
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                    enabled: !_isProcessing,
-                    onSubmitted: (text) {
-                      if (text.isNotEmpty && !_isProcessing) {
-                        _sendMessage(text);
-                      }
-                    },
+                      const VoiceButton(),
+                    ],
                   ),
 
                   const SizedBox(height: 12),
