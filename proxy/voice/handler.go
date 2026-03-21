@@ -33,7 +33,6 @@ func ServeVoiceWs(models *VoiceModels, hub HubCallbackRegistrar, taskSender Devi
 
 	go session.writePump()
 	go session.vadProcessor()
-	go session.aiTtsWorker()
 	session.readPump() // blocks until connection closes
 
 	log.Printf("[Voice] connection closed: %s", r.RemoteAddr)

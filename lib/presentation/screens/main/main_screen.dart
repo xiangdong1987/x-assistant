@@ -436,59 +436,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     await _tts.speak(text);
   }
 
-  // Track last voice state to detect turn completion
-  String _lastVoiceTranscript = '';
-  String _lastVoiceAiText = '';
-
-  void _onVoiceStateChanged(VoiceState? prev, VoiceState next) {
-    // Capture transcript as it comes in
-    if (next.transcript.isNotEmpty) {
-      _lastVoiceTranscript = next.transcript;
-    }
-    if (next.aiText.isNotEmpty) {
-      _lastVoiceAiText = next.aiText;
-    }
-
-    // When a turn completes (status goes from thinking/speaking back to ready/idle),
-    // flush the turn into the chat message list.
-    final wasActive = prev != null &&
-        (prev.status == VoiceStatus.thinking ||
-            prev.status == VoiceStatus.speaking);
-    final isSettling = next.status == VoiceStatus.ready ||
-        next.status == VoiceStatus.idle ||
-        next.status == VoiceStatus.error;
-
-    if (wasActive && isSettling && _lastVoiceTranscript.isNotEmpty) {
-      final userText = _lastVoiceTranscript;
-      final aiText = _lastVoiceAiText;
-      _lastVoiceTranscript = '';
-      _lastVoiceAiText = '';
-
-      setState(() {
-        _messages.add(Message(
-          content: userText,
-          isUser: true,
-          timestamp: DateTime.now(),
-          status: MessageStatus.complete,
-        ));
-        if (aiText.isNotEmpty) {
-          _messages.add(Message(
-            content: aiText,
-            isUser: false,
-            timestamp: DateTime.now(),
-            status: MessageStatus.complete,
-          ));
-        }
-      });
-      _scrollToBottom();
-      _saveToHistory();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Listen for voice turn completion and push messages into chat
-    ref.listen<VoiceState>(voiceServiceProvider, _onVoiceStateChanged);
+    // Fill the text field whenever a final transcript arrives.
+    ref.listen<VoiceState>(voiceServiceProvider, (prev, next) {
+      final t = next.lastFinalTranscript;
+      if (t != null && t.isNotEmpty && t != prev?.lastFinalTranscript) {
+        _textController.text = t;
+        _textController.selection = TextSelection.collapsed(offset: t.length);
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(

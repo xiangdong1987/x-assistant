@@ -260,11 +260,6 @@ func (s *VoiceSession) vadProcessor() {
 		if finalText != "" {
 			s.SendJSON(MsgTranscript(s.sessionID, finalText, true))
 			log.Printf("[Voice:%s] transcript (final): %q", s.sessionID, finalText)
-			select {
-			case s.speech <- SpeechSegment{Text: finalText, DurationMs: durMs}:
-			default:
-				log.Printf("[Voice:%s] speech channel full, dropping segment", s.sessionID)
-			}
 		}
 	}
 

@@ -4,14 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/connection_service.dart';
 import '../../services/voice_service.dart';
 
-/// Animated microphone button that controls the server-side voice pipeline.
+/// Microphone button that streams speech to the server and fills the text
+/// field with the final transcript via [VoiceService].
 ///
-/// - Idle:      grey mic icon
-/// - Connecting: spinner
-/// - Ready/Listening: pulsing red mic
-/// - Thinking:  pulsing blue AI icon
-/// - Speaking:  pulsing purple speaker icon
-/// - Error:     red warning icon (tap to retry/dismiss)
+/// States:
+///   Idle       → grey mic icon
+///   Connecting → spinner
+///   Ready      → mic icon (accent color)
+///   Listening  → pulsing red mic
+///   Error      → red mic_off icon (tap to dismiss)
 class VoiceButton extends ConsumerWidget {
   const VoiceButton({super.key});
 
@@ -26,7 +27,6 @@ class VoiceButton extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (info) {
         if (info == null) return const SizedBox.shrink();
-
         return _VoiceButtonCore(
           state: voiceState,
           onToggle: () async {
@@ -36,7 +36,6 @@ class VoiceButton extends ConsumerWidget {
               await voice.start(info);
             }
           },
-          onCancel: voice.cancel,
         );
       },
     );
@@ -46,13 +45,8 @@ class VoiceButton extends ConsumerWidget {
 class _VoiceButtonCore extends StatefulWidget {
   final VoiceState state;
   final VoidCallback onToggle;
-  final VoidCallback onCancel;
 
-  const _VoiceButtonCore({
-    required this.state,
-    required this.onToggle,
-    required this.onCancel,
-  });
+  const _VoiceButtonCore({required this.state, required this.onToggle});
 
   @override
   State<_VoiceButtonCore> createState() => _VoiceButtonCoreState();
@@ -67,7 +61,7 @@ class _VoiceButtonCoreState extends State<_VoiceButtonCore>
     super.initState();
     _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
   }
 
@@ -80,30 +74,48 @@ class _VoiceButtonCoreState extends State<_VoiceButtonCore>
   @override
   Widget build(BuildContext context) {
     final s = widget.state;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    // Connecting: spinner
     if (s.status == VoiceStatus.connecting) {
       return const SizedBox(
         width: 48,
         height: 48,
-        child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))),
+        child: Center(
+          child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
       );
     }
 
-    // Active session: show inline info panel + mic/cancel button
-    if (s.isActive) {
-      return _ActivePanel(
-        state: s,
-        pulse: _pulse,
-        onStop: widget.onToggle,
-        onCancel: widget.onCancel,
+    if (s.status == VoiceStatus.listening) {
+      return AnimatedBuilder(
+        animation: _pulse,
+        builder: (context, _) => IconButton(
+          iconSize: 26,
+          tooltip: s.transcript.isNotEmpty ? s.transcript : 'Listening…',
+          onPressed: widget.onToggle,
+          icon: Icon(
+            Icons.mic,
+            color: Color.lerp(Colors.red, Colors.red.shade200, _pulse.value),
+          ),
+        ),
       );
     }
 
-    // Idle / error: just the mic button
+    if (s.status == VoiceStatus.ready) {
+      return IconButton(
+        iconSize: 26,
+        tooltip: 'Listening (tap to stop)',
+        onPressed: widget.onToggle,
+        icon: Icon(Icons.mic, color: colorScheme.primary),
+      );
+    }
+
+    // Idle or error
     return IconButton(
       iconSize: 26,
-      tooltip: s.status == VoiceStatus.error ? (s.errorMessage ?? 'Voice error') : 'Start voice',
+      tooltip: s.status == VoiceStatus.error
+          ? (s.errorMessage ?? 'Voice error — tap to retry')
+          : 'Start voice input',
       onPressed: widget.onToggle,
       icon: Icon(
         s.status == VoiceStatus.error ? Icons.mic_off : Icons.mic_none,
@@ -113,77 +125,7 @@ class _VoiceButtonCoreState extends State<_VoiceButtonCore>
   }
 }
 
-class _ActivePanel extends StatelessWidget {
-  final VoiceState state;
-  final Animation<double> pulse;
-  final VoidCallback onStop;
-  final VoidCallback onCancel;
-
-  const _ActivePanel({
-    required this.state,
-    required this.pulse,
-    required this.onStop,
-    required this.onCancel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final (icon, color, tip) = switch (state.status) {
-      VoiceStatus.listening => (Icons.mic, Colors.red, 'Listening…'),
-      VoiceStatus.thinking  => (Icons.auto_awesome, colorScheme.primary, 'Thinking…'),
-      VoiceStatus.speaking  => (Icons.volume_up, Colors.purple, 'Speaking…'),
-      _                     => (Icons.mic, Colors.grey, 'Ready'),
-    };
-
-    return AnimatedBuilder(
-      animation: pulse,
-      builder: (context, _) {
-        final scale = state.status == VoiceStatus.listening || state.status == VoiceStatus.speaking
-            ? 1.0 + pulse.value * 0.2
-            : 1.0;
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Pulsing status icon
-            GestureDetector(
-              onTap: state.status == VoiceStatus.thinking || state.status == VoiceStatus.speaking
-                  ? onCancel
-                  : null,
-              child: Tooltip(
-                message: tip,
-                child: Transform.scale(
-                  scale: scale,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(30),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: color, size: 22),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            // Stop button
-            IconButton(
-              iconSize: 20,
-              tooltip: 'Stop voice',
-              onPressed: onStop,
-              icon: const Icon(Icons.stop_circle_outlined),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// A bottom sheet (or modal) that shows live transcript + AI text during a session.
+/// Inline partial transcript shown above the input field while listening.
 class VoiceStatusSheet extends ConsumerWidget {
   const VoiceStatusSheet({super.key});
 
@@ -193,64 +135,42 @@ class VoiceStatusSheet extends ConsumerWidget {
     if (!s.isActive) return const SizedBox.shrink();
 
     final colorScheme = Theme.of(context).colorScheme;
+    final text = s.transcript.isNotEmpty
+        ? s.transcript
+        : switch (s.status) {
+            VoiceStatus.ready     => '等待说话…',
+            VoiceStatus.listening => '正在聆听…',
+            _                     => '',
+          };
+
+    if (text.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colorScheme.outline.withAlpha(60)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          if (s.transcript.isNotEmpty) ...[
-            Text(
-              'You: ${s.transcript}',
+          Icon(Icons.mic, size: 14, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: s.transcript.isNotEmpty
+                        ? colorScheme.onSurface
+                        : colorScheme.onSurfaceVariant,
                   ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ],
-          if (s.aiText.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              s.aiText,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          if (s.transcript.isEmpty && s.aiText.isEmpty) ...[
-            Row(
-              children: [
-                Icon(Icons.mic, size: 16, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  _statusLabel(s.status),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ],
       ),
     );
   }
-
-  String _statusLabel(VoiceStatus status) => switch (status) {
-        VoiceStatus.ready      => 'Waiting for speech…',
-        VoiceStatus.listening  => 'Listening…',
-        VoiceStatus.thinking   => 'Processing…',
-        VoiceStatus.speaking   => 'Speaking…',
-        _                      => '',
-      };
 }
