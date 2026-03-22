@@ -15,8 +15,11 @@ go run main.go
 ### 启用 OpenClaw + 语音
 
 ```bash
-bash start.sh
+OPENCLAW_TOKEN=<your-token> bash start.sh
 ```
+
+> `OPENCLAW_TOKEN` 为必填项。本地开发时可使用任意非空字符串（如 `dev`），
+> 因为 `--allow-local-no-auth` 已跳过本地请求的 JWT 验证。
 
 或手动指定参数：
 
@@ -27,7 +30,8 @@ CGO_ENABLED=1 go run main.go \
   --allow-local-no-auth \
   --skills-path="../skills" \
   -voice \
-  -voice-models-dir ./models
+  -voice-models-dir ./models \
+  -voice-stt-dir ./models/stt-sense-voice
 ```
 
 > `CGO_ENABLED=1` 是语音功能必须的，Sherpa-ONNX 依赖 CGO。
@@ -36,7 +40,38 @@ CGO_ENABLED=1 go run main.go \
 
 ## 语音功能
 
-### 下载模型（约 400MB，仅需运行一次）
+### 工作流程
+
+```
+麦克风 PCM16 → VAD（静音检测）→ STT（语音转文字）→ 追加到 App 输入框
+```
+
+- **VAD**：Silero VAD 实时检测说话起止，自动切断句子
+- **STT**：支持多引擎并行，整段识别后返回最终文字
+- **App 集成**：识别结果追加到输入框，支持语音指令控制
+
+### 语音指令（App 内）
+
+说出以下指令词，App 会自动执行对应操作（支持 SenseVoice 标点，如"发送。"也可识别）：
+
+| 指令词 | 操作 |
+|--------|------|
+| `发送` / `提交` / `发出去` / `发吧` / `发出` | 5 秒倒计时后自动发送，可点 ✕ 取消 |
+| `清除` / `清空` / `删除` / `重来` / `算了` | 立即清空输入框 |
+| `send` / `submit` / `send it` | 同"发送" |
+| `clear` / `clear input` | 同"清除" |
+
+> 指令词需出现在当次说话的**末尾**。例如说"帮我查一下天气发送"，会提取"帮我查一下天气"并发送。
+
+### 快捷键
+
+| 快捷键 | 操作 |
+|--------|------|
+| `Ctrl+M` | 开启 / 关闭语音输入 |
+
+---
+
+### 下载模型（仅需运行一次）
 
 ```bash
 bash models/download.sh
@@ -47,14 +82,23 @@ bash models/download.sh
 ```
 models/
 ├── vad/
-│   └── silero_vad.onnx          # Silero VAD (~2MB)
-├── stt/                         # 默认 STT 目录（Zipformer 双语 zh-en）
+│   └── silero_vad.onnx              # Silero VAD (~2MB)
+├── stt/                             # Zipformer 双语 zh-en（流式，低延迟）
 │   ├── encoder.int8.onnx
 │   ├── decoder.int8.onnx
 │   ├── joiner.int8.onnx
 │   └── tokens.txt
+├── stt-paraformer-zh/               # Paraformer zh（批量，中文准确率高）
+│   ├── model.int8.onnx
+│   ├── tokens.txt
+│   └── type.txt                     # 内容: paraformer
+├── stt-sense-voice/                 # SenseVoice（推荐，中英日韩粤，自带标点）
+│   ├── model.int8.onnx
+│   ├── tokens.txt
+│   ├── type.txt                     # 内容: sense-voice
+│   └── language.txt                 # 内容: zh（固定中文，避免误识别为日文）
 └── tts/
-    ├── model.onnx               # Kokoro 多语言 TTS
+    ├── model.onnx                   # Kokoro 多语言 TTS
     ├── voices.bin
     ├── tokens.txt
     ├── lexicon.txt
@@ -67,65 +111,58 @@ models/
 
 ### 支持的模型类型
 
-| 类型 | 识别方式 | 代表模型 | 特点 |
+| 类型 | 识别方式 | 推荐场景 | 大小 |
 |------|----------|----------|------|
-| `zipformer` | 流式（实时局部文字） | Zipformer 双语 | 低延迟，英文较强 |
-| `paraformer` | 批量（整段识别） | Paraformer-zh | 中文准确率高 |
-| `whisper` | 批量（整段识别） | Whisper tiny/small/large | 多语言，准确率高 |
+| `sense-voice` | 批量 | **中文首选**，自带标点，支持中英日韩粤 | ~228MB |
+| `paraformer` | 批量 | 中文，无标点 | ~220MB |
+| `zipformer` | 流式（实时局部文字） | 英文为主，低延迟 | ~90MB |
+| `whisper` | 批量 | 多语言 | 视规格而定 |
 
 ### 模型类型自动检测
 
-程序启动时自动检测 STT 目录中的模型类型，检测顺序：
+启动时按以下顺序检测目录内模型类型：
 
-1. **`type.txt`**（优先）：目录内放一个文件，内容为 `zipformer` / `paraformer` / `whisper`
+1. **`type.txt`**（优先）：文件内容为 `sense-voice` / `paraformer` / `zipformer` / `whisper`
 2. **文件启发式**：
-   - 有 `encoder.int8.onnx` + `decoder.int8.onnx` + `joiner.int8.onnx` → `zipformer`
-   - 有 `model.int8.onnx` 或 `model.onnx` → `paraformer`
-   - 有 `encoder.onnx` + `decoder.onnx` → `whisper`
+   - `encoder.int8.onnx` + `decoder.int8.onnx` + `joiner.int8.onnx` → `zipformer`
+   - `model.int8.onnx` 或 `model.onnx` → `paraformer`
+   - `encoder.onnx` + `decoder.onnx` → `whisper`
 
-### 切换单个模型
-
-```bash
-# 使用中文 Paraformer
-CGO_ENABLED=1 go run main.go -voice -voice-stt-dir ./models/stt-paraformer-zh
-
-# 使用 Whisper
-CGO_ENABLED=1 go run main.go -voice -voice-stt-dir ./models/stt-whisper
-```
-
-### 同时加载多个模型（并行识别，取最长结果）
-
-`-voice-stt-dir` 可重复指定，所有模型并行跑，自动选最长的识别结果：
+### 切换模型
 
 ```bash
+# 使用 SenseVoice（推荐，中文效果最好）
+OPENCLAW_TOKEN=dev bash start.sh
+# start.sh 默认已指向 stt-sense-voice
+
+# 手动指定
+CGO_ENABLED=1 go run main.go -voice -voice-stt-dir ./models/stt-sense-voice
+
+# 多模型并联（并行识别，取字数最多的结果）
 CGO_ENABLED=1 go run main.go -voice \
-  -voice-stt-dir ./models/stt-zipformer-en \
-  -voice-stt-dir ./models/stt-paraformer-zh
+  -voice-stt-dir ./models/stt-sense-voice \
+  -voice-stt-dir ./models/stt-zipformer-en
 ```
 
-> 多模型场景适合中英混合输入：英文走 Zipformer，中文走 Paraformer，取字数最多的结果。
+### SenseVoice 中文模型下载
 
-### Paraformer 中文模型下载示例
+```bash
+mkdir -p models/stt-sense-voice
+BASE="https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main"
+curl -L -o models/stt-sense-voice/model.int8.onnx "$BASE/model.int8.onnx"
+curl -L -o models/stt-sense-voice/tokens.txt      "$BASE/tokens.txt"
+echo "sense-voice" > models/stt-sense-voice/type.txt
+echo "zh"          > models/stt-sense-voice/language.txt
+```
+
+### Paraformer 中文模型下载
 
 ```bash
 mkdir -p models/stt-paraformer-zh
-cd models/stt-paraformer-zh
-# 从 sherpa-onnx releases 下载 Paraformer zh 模型（约 220MB）
-wget https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-2023-09-14.tar.bz2
-tar xf sherpa-onnx-paraformer-zh-2023-09-14.tar.bz2 --strip-components=1
-echo "paraformer" > type.txt
-```
-
-### Whisper 模型下载示例
-
-```bash
-mkdir -p models/stt-whisper-zh
-cd models/stt-whisper-zh
-# 从 sherpa-onnx releases 下载 Whisper 模型
-wget https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2
-tar xf sherpa-onnx-whisper-tiny.tar.bz2 --strip-components=1
-echo "zh" > language.txt   # Whisper 语言提示
-echo "whisper" > type.txt
+BASE="https://huggingface.co/csukuangfj/sherpa-onnx-paraformer-zh-2024-03-09/resolve/main"
+curl -L -o models/stt-paraformer-zh/model.int8.onnx "$BASE/model.int8.onnx"
+curl -L -o models/stt-paraformer-zh/tokens.txt      "$BASE/tokens.txt"
+echo "paraformer" > models/stt-paraformer-zh/type.txt
 ```
 
 ---
