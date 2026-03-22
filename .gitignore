@@ -1,3 +1,8 @@
+# Voice model files (large binaries, download via models/download.sh)
+proxy/models/vad/
+proxy/models/stt/
+proxy/models/tts/
+
 # Miscellaneous
 *.class
 *.log

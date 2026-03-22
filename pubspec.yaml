@@ -28,6 +28,10 @@ dependencies:
   speech_to_text: 7.2.0
   flutter_tts: ^4.2.0
 
+  # Server-side voice pipeline (VAD+STT+TTS via proxy WebSocket)
+  record: ^6.0.0
+  audioplayers: ^6.0.0
+
   # QR Code Scanner
   mobile_scanner: ^4.0.1
 

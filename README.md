@@ -36,7 +36,20 @@ The `phaseWatcher` monitors tasks and triggers the appropriate phase. Phase exec
 - Built-in skills: `create-task`, `execute-task`, `generate-plan`, `agent-start`, `agent-stop`, `agent-status`, `tmux-focus`
 - Additional skills: `schedule`, `shutdown`, `db-query`, `italia-company-lookup`
 
-### 6. Real-time
+### 6. Voice Input (Dictation)
+- Tap the mic button or press **Ctrl+M** to start voice input
+- Speech is transcribed and **appended** to the chat input field (dictation mode)
+- Voice commands (spoken at the end of an utterance):
+
+  | Command word | Action |
+  |---|---|
+  | `发送` / `send` / `submit` | Auto-submit after a 5-second countdown (tap ✕ to cancel) |
+  | `清除` / `清空` / `clear` | Immediately clear the input field |
+
+- Punctuation from STT models (e.g. SenseVoice) is stripped automatically before command detection
+- Pre-roll buffer compensates for VAD onset latency so the first syllable is not clipped
+
+### 7. Real-time
 - WebSocket (heartbeat, reconnect), OpenClaw task push, connection status
 
 ## Tech Stack
@@ -79,6 +92,30 @@ flutter run
 cd proxy
 go mod download
 go run main.go --skills-path="../skills"
+```
+
+### Voice Input Setup
+
+Voice requires `CGO_ENABLED=1` and Sherpa-ONNX models. See [`proxy/README.md`](proxy/README.md) for full details.
+
+```bash
+cd proxy
+
+# 1. Download models (VAD + STT + TTS, ~400 MB total)
+bash models/download.sh
+
+# Download the recommended SenseVoice STT model (~228 MB, best Chinese accuracy)
+mkdir -p models/stt-sense-voice
+BASE="https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main"
+curl -L -o models/stt-sense-voice/model.int8.onnx "$BASE/model.int8.onnx"
+curl -L -o models/stt-sense-voice/tokens.txt      "$BASE/tokens.txt"
+echo "sense-voice" > models/stt-sense-voice/type.txt
+echo "zh"          > models/stt-sense-voice/language.txt
+
+# 2. Start proxy with voice enabled
+OPENCLAW_TOKEN=<your-token> bash start.sh
+# For local dev, any non-empty string works as token:
+OPENCLAW_TOKEN=dev bash start.sh
 ```
 
 ### Proxy Options

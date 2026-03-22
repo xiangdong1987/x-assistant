@@ -2,6 +2,14 @@ github.com/golang-jwt/jwt/v5 v5.2.0 h1:d/ix8ftRUorsN+5eMIlF4T6J8CAt9rch3My2winC1
 github.com/golang-jwt/jwt/v5 v5.2.0/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
+github.com/k2-fsa/sherpa-onnx-go v1.12.30 h1:t0BjuO0Y2epT/V71KlajlhLoP/A4ZELLDHRbyWwm14A=
+github.com/k2-fsa/sherpa-onnx-go v1.12.30/go.mod h1:B/ynRbVa5gpYoZYeYgY3zPi4MTfKk95UZueZDSIhbjk=
+github.com/k2-fsa/sherpa-onnx-go-linux v1.12.31 h1:kK64EwsE+PpJJczvOr4tW1X3uZKNmZFH6yCBBX29GFs=
+github.com/k2-fsa/sherpa-onnx-go-linux v1.12.31/go.mod h1:NXEH2rsBgTdqY59YpPq6CtSBlBAXy/8a9FmpLERU97I=
+github.com/k2-fsa/sherpa-onnx-go-macos v1.12.31 h1:ZbrqOoByqFBOwHTFYOrfv4Z3C4nII/csaV6a3X2fexI=
+github.com/k2-fsa/sherpa-onnx-go-macos v1.12.31/go.mod h1:ZOhUAXC62Unj0ZNfu6zxSFKcW96aXf7P3BsqiUyOBbE=
+github.com/k2-fsa/sherpa-onnx-go-windows v1.12.31 h1:laWKf1zcsEzB2H6eR1IyONWKN0/0kutyDTVM8slXMyY=
+github.com/k2-fsa/sherpa-onnx-go-windows v1.12.31/go.mod h1:5AX7TU8+P/gInjglY1ijtWUM2b8iyR0QX4yEngzMe64=
 github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e h1:MRM5ITcdelLK2j1vwZ3Je0FKVCfqOLp5zO6trqMLYs0=
 github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e/go.mod h1:XV66xRDqSt+GTGFMVlhk3ULuV0y9ZmzeVGR4mloJI3M=
 golang.org/x/net v0.17.0 h1:pVaXccu2ozPjCXewfr1S7xza/zcXTity9cCdXQYSjIM=

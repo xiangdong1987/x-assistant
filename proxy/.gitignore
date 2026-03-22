@@ -1,0 +1,12 @@
+# Voice models (large binary files, download via models/download.sh)
+models/vad/
+models/stt/
+models/stt-*/
+models/tts/
+
+# Compiled binary
+claude-voice-proxy
+
+# Logs
+*.log
+logs/

@@ -9,13 +9,21 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"claude-voice-proxy/auth"
 	"claude-voice-proxy/mcp"
 	"claude-voice-proxy/openclaw"
 	"claude-voice-proxy/server"
+	"claude-voice-proxy/voice"
 )
+
+// multiFlag collects repeated -flag=value occurrences.
+type multiFlag []string
+
+func (f *multiFlag) String() string  { return strings.Join(*f, ", ") }
+func (f *multiFlag) Set(v string) error { *f = append(*f, v); return nil }
 
 // getEnvInt returns an integer value from environment variable with a default fallback
 func getEnvInt(key string, defaultVal int) int {
@@ -63,6 +71,17 @@ func main() {
 	// Interval configuration flags
 	taskSyncInterval := flag.Int("task-sync-interval", 0, "Task status sync interval in seconds (env: TASK_SYNC_INTERVAL)")
 	phaseWatcherInterval := flag.Int("phase-watcher-interval", 0, "Phase watcher interval in seconds (env: PHASE_WATCHER_INTERVAL)")
+
+	// Voice pipeline configuration flags
+	voiceEnabled    := flag.Bool("voice", false, "Enable voice pipeline (Sherpa-ONNX STT/TTS/VAD)")
+	voiceModelsDir  := flag.String("voice-models-dir", "./models", "Directory containing voice model files")
+	voiceVADThresh  := flag.Float64("voice-vad-threshold", 0.5, "VAD speech detection threshold (0.0-1.0)")
+	voiceVADSilence := flag.Int("voice-vad-silence-ms", 500, "Silence duration to end an utterance (ms)")
+	voiceSTTThreads := flag.Int("voice-stt-threads", 2, "STT inference thread count")
+	voiceTTSThreads := flag.Int("voice-tts-threads", 2, "TTS inference thread count")
+	voiceSpeaker    := flag.Int("voice-tts-speaker", 0, "Default TTS speaker ID")
+	var voiceSTTDirs multiFlag
+	flag.Var(&voiceSTTDirs, "voice-stt-dir", "STT model directory (repeatable; auto-detects zipformer/paraformer/whisper)")
 
 	// Optional PIN to persist before start (for app-launch / launchd with known PIN so client can auto-connect)
 	pinFlag := flag.String("pin", "", "Pairing PIN (6 digits); if set, persisted and used for this and future runs")
@@ -170,8 +189,20 @@ func main() {
 		phaseWatcherIntervalSec = *phaseWatcherInterval
 	}
 
+	// Build voice configuration (flag > env > default)
+	voiceCfg := voice.DefaultVoiceConfig(getEnvString("VOICE_MODELS_DIR", *voiceModelsDir))
+	voiceCfg.Enabled = *voiceEnabled || getEnvString("VOICE_ENABLED", "") == "true"
+	voiceCfg.VADThreshold = float32(*voiceVADThresh)
+	voiceCfg.VADSilenceMs = *voiceVADSilence
+	voiceCfg.STTNumThreads = *voiceSTTThreads
+	voiceCfg.TTSNumThreads = *voiceTTSThreads
+	voiceCfg.DefaultSpeaker = *voiceSpeaker
+	if len(voiceSTTDirs) > 0 {
+		voiceCfg.STTDirs = []string(voiceSTTDirs)
+	}
+
 	// Create and start server
-	srv := server.New(*host, *port, *workDir, *skillsPath, mcpConfig, openclawConfig, *allowLocalNoAuth, taskSyncIntervalSec, phaseWatcherIntervalSec)
+	srv := server.New(*host, *port, *workDir, *skillsPath, mcpConfig, openclawConfig, *allowLocalNoAuth, taskSyncIntervalSec, phaseWatcherIntervalSec, voiceCfg)
 
 	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)

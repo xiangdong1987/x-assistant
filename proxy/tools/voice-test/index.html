@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Voice Test — Claude Voice Proxy</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+       background: #1a1a1a; color: #e0e0e0; padding: 20px; font-size: 14px; }
+h1 { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 16px; }
+
+.card { background: #252525; border: 1px solid #333; border-radius: 10px;
+        padding: 16px; margin-bottom: 12px; }
+.card h2 { font-size: 12px; font-weight: 600; color: #888;
+           text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+
+.row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.row:last-child { margin-bottom: 0; }
+label { color: #888; font-size: 12px; width: 45px; flex-shrink: 0; }
+input[type=text], input[type=number] {
+  background: #1a1a1a; border: 1px solid #444; border-radius: 6px;
+  color: #e0e0e0; padding: 6px 10px; font-size: 13px; flex: 1; outline: none; }
+input:focus { border-color: #0a84ff; }
+
+button { border: none; border-radius: 6px; padding: 6px 14px; font-size: 13px;
+         font-weight: 500; cursor: pointer; transition: opacity 0.15s; }
+button:hover { opacity: 0.85; }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-blue  { background: #0a84ff; color: #fff; }
+.btn-green { background: #30d158; color: #000; }
+.btn-red   { background: #ff453a; color: #fff; }
+.btn-gray  { background: #3a3a3c; color: #e0e0e0; }
+
+.status-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.badge { display: inline-flex; align-items: center; gap: 5px;
+         background: #333; border-radius: 20px; padding: 3px 10px; font-size: 12px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #555; }
+.dot.on  { background: #30d158; }
+.dot.off { background: #ff453a; }
+.dot.pulse { background: #0a84ff; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+.transcript-box { background: #1a1a1a; border: 1px solid #333; border-radius: 8px;
+                  padding: 12px; min-height: 60px; font-size: 15px; line-height: 1.6; }
+.partial { color: #888; }
+.final   { color: #e0e0e0; }
+
+.ai-box { background: #1a1a1a; border: 1px solid #333; border-radius: 8px;
+          padding: 12px; min-height: 60px; font-size: 15px; line-height: 1.6; color: #8ecfff; }
+
+.log { background: #111; border: 1px solid #2a2a2a; border-radius: 8px;
+       padding: 10px; height: 140px; overflow-y: auto; font-size: 11px;
+       font-family: "SF Mono", monospace; color: #666; }
+.log-entry { padding: 1px 0; }
+.log-entry.info  { color: #666; }
+.log-entry.ok    { color: #30d158; }
+.log-entry.warn  { color: #ffd60a; }
+.log-entry.error { color: #ff453a; }
+.log-entry.vad   { color: #bf5af2; }
+.log-entry.stt   { color: #64d2ff; }
+.log-entry.ai    { color: #8ecfff; }
+.log-entry.tts   { color: #ff9f0a; }
+
+#controls { display: flex; gap: 8px; align-items: center; }
+#vol-bar { flex: 1; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+#vol-fill { height: 100%; width: 0%; background: #30d158; transition: width 0.05s; }
+</style>
+</head>
+<body>
+<h1>🎙 Voice Test — Claude Voice Proxy</h1>
+
+<!-- Connection -->
+<div class="card">
+  <h2>Connection</h2>
+  <div class="row">
+    <label>Server</label>
+    <input type="text" id="serverAddr" value="ws://localhost:8443">
+  </div>
+  <div class="row">
+    <label>PIN</label>
+    <input type="text" id="pinInput" placeholder="6-digit PIN" maxlength="6" style="flex:0.3">
+    <button class="btn-gray" id="pairBtn" onclick="doPair()">Pair</button>
+    <label style="width:auto">Token</label>
+    <input type="text" id="tokenInput" placeholder="JWT token (auto-filled after pairing)">
+  </div>
+  <div class="row">
+    <label>Speaker</label>
+    <input type="number" id="speakerID" value="0" min="0" max="103" style="flex:0.2">
+    <label style="width:auto;margin-left:8px">Lang</label>
+    <select id="langSel" style="background:#1a1a1a;border:1px solid #444;border-radius:6px;color:#e0e0e0;padding:5px 8px;font-size:13px">
+      <option value="auto">auto</option>
+      <option value="zh">zh</option>
+      <option value="en">en</option>
+    </select>
+    <button class="btn-blue" id="connectBtn" onclick="doConnect()" style="margin-left:auto">Connect</button>
+    <button class="btn-gray" id="disconnectBtn" onclick="doDisconnect()" disabled>Disconnect</button>
+  </div>
+</div>
+
+<!-- Status -->
+<div class="card">
+  <h2>Status</h2>
+  <div class="status-row">
+    <span class="badge"><span class="dot" id="dotWs"></span> WebSocket</span>
+    <span class="badge"><span class="dot" id="dotVad"></span> VAD</span>
+    <span class="badge"><span class="dot" id="dotStt"></span> STT</span>
+    <span class="badge"><span class="dot" id="dotTts"></span> TTS</span>
+    <span class="badge"><span class="dot" id="dotSpeaking"></span> Speaking</span>
+    <span class="badge"><span class="dot" id="dotPlaying"></span> Playing TTS</span>
+    <span id="statusText" style="color:#888;font-size:12px;margin-left:auto">Disconnected</span>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="card">
+  <h2>Microphone</h2>
+  <div id="controls">
+    <button class="btn-green" id="startBtn" onclick="startRecording()" disabled>▶ Start</button>
+    <button class="btn-red"   id="stopBtn"  onclick="stopRecording()"  disabled>■ Stop</button>
+    <button class="btn-gray"  id="cancelBtn" onclick="doCancel()"      disabled>✕ Cancel AI</button>
+    <div id="vol-bar"><div id="vol-fill"></div></div>
+  </div>
+</div>
+
+<!-- Transcript -->
+<div class="card">
+  <h2>Transcript (STT)</h2>
+  <div class="transcript-box" id="transcriptBox">—</div>
+</div>
+
+<!-- Dictation Input -->
+<div class="card">
+  <h2>Dictation Input</h2>
+  <div class="row" style="align-items:flex-start">
+    <textarea id="dictationInput" rows="4"
+      style="flex:1;background:#1a1a1a;border:1px solid #444;border-radius:6px;
+             color:#e0e0e0;padding:8px 10px;font-size:15px;resize:vertical;outline:none;
+             font-family:inherit;line-height:1.6"
+      placeholder="Final transcripts will be appended here…"></textarea>
+  </div>
+  <div class="row" style="justify-content:flex-end">
+    <button class="btn-gray" onclick="document.getElementById('dictationInput').value=''">Clear</button>
+  </div>
+</div>
+
+<!-- AI Response -->
+<div class="card">
+  <h2>AI Response</h2>
+  <div class="ai-box" id="aiBox">—</div>
+</div>
+
+<!-- Log -->
+<div class="card">
+  <h2>Event Log</h2>
+  <div class="log" id="logBox"></div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let ws = null
+let sessionID = null
+let audioCtx = null
+let sourceNode = null
+let processorNode = null
+let mediaStream = null
+let ttsSampleRate = 24000
+let ttsCtx = null
+let ttsNextTime = 0
+let isRecording = false
+let isMuted = false
+const TARGET_RATE = 16000
+const FRAME_SAMPLES = 320  // 20ms @ 16kHz
+
+// ── Logging ────────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const box = document.getElementById('logBox')
+  const el = document.createElement('div')
+  el.className = 'log-entry ' + type
+  const ts = new Date().toLocaleTimeString('en', {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})
+  el.textContent = `[${ts}] ${msg}`
+  box.appendChild(el)
+  box.scrollTop = box.scrollHeight
+}
+
+function setStatus(text) {
+  document.getElementById('statusText').textContent = text
+}
+function dot(id, state) {
+  const el = document.getElementById(id)
+  el.className = 'dot ' + (state === 'on' ? 'on' : state === 'pulse' ? 'pulse' : 'off')
+}
+
+// ── Pairing ────────────────────────────────────────────────────────────────
+async function doPair() {
+  const addr = document.getElementById('serverAddr').value.replace('ws://', 'http://').replace('wss://', 'https://')
+  const pin  = document.getElementById('pinInput').value.trim()
+  if (!pin) { log('Enter a PIN first', 'warn'); return }
+  try {
+    const res = await fetch(`${addr}/api/pair`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({pin, device_id:'voice-test-browser', device_name:'Voice Test'})
+    })
+    const data = await res.json()
+    if (data.token) {
+      document.getElementById('tokenInput').value = data.token
+      log('Paired ✓ token received', 'ok')
+    } else {
+      log('Pair failed: ' + JSON.stringify(data), 'error')
+    }
+  } catch(e) {
+    log('Pair error: ' + e.message, 'error')
+  }
+}
+
+// ── WebSocket ──────────────────────────────────────────────────────────────
+function doConnect() {
+  const addr  = document.getElementById('serverAddr').value.trim()
+  const token = document.getElementById('tokenInput').value.trim()
+  if (!token) { log('Token required — pair first or paste a token', 'warn'); return }
+
+  sessionID = crypto.randomUUID()
+  const url = `${addr}/voice/ws?token=${encodeURIComponent(token)}`
+  log(`Connecting to ${url}`, 'info')
+
+  ws = new WebSocket(url)
+  ws.binaryType = 'arraybuffer'
+
+  ws.onopen = () => {
+    dot('dotWs', 'on')
+    setStatus('Connected')
+    log('WebSocket connected', 'ok')
+    document.getElementById('connectBtn').disabled = true
+    document.getElementById('disconnectBtn').disabled = false
+    document.getElementById('startBtn').disabled = false
+
+    // Send voice_start
+    const lang = document.getElementById('langSel').value
+    const speaker = parseInt(document.getElementById('speakerID').value) || 0
+    sendJSON({ type: 'voice_start', payload: { session_id: sessionID, sample_rate: TARGET_RATE, language: lang, speaker_id: speaker }})
+    log(`voice_start sent (session=${sessionID.slice(0,8)}… speaker=${speaker})`, 'info')
+  }
+
+  ws.onclose = (e) => {
+    dot('dotWs', 'off')
+    setStatus('Disconnected')
+    log(`WebSocket closed (${e.code})`, e.wasClean ? 'info' : 'error')
+    onDisconnected()
+  }
+
+  ws.onerror = () => {
+    log('WebSocket error', 'error')
+  }
+
+  ws.onmessage = (e) => {
+    if (e.data instanceof ArrayBuffer) {
+      onTTSAudio(e.data)
+    } else {
+      onJSONMessage(JSON.parse(e.data))
+    }
+  }
+}
+
+function doDisconnect() {
+  if (ws) { ws.close(); ws = null }
+  stopRecording()
+  onDisconnected()
+}
+
+function onDisconnected() {
+  dot('dotWs', 'off')
+  dot('dotSpeaking', 'off')
+  dot('dotPlaying', 'off')
+  document.getElementById('connectBtn').disabled = false
+  document.getElementById('disconnectBtn').disabled = true
+  document.getElementById('startBtn').disabled = true
+  document.getElementById('stopBtn').disabled = true
+  document.getElementById('cancelBtn').disabled = true
+  stopRecording()
+}
+
+function sendJSON(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj))
+}
+
+function doCancel() {
+  sendJSON({ type: 'voice_cancel', payload: { session_id: sessionID }})
+  log('voice_cancel sent', 'warn')
+}
+
+// ── Voice message handler ──────────────────────────────────────────────────
+function onJSONMessage(msg) {
+  switch (msg.type) {
+  case 'voice_ready': {
+    const cap = msg.payload.capabilities
+    dot('dotVad', cap.vad ? 'on' : 'off')
+    dot('dotStt', cap.stt ? 'on' : 'off')
+    dot('dotTts', cap.tts ? 'on' : 'off')
+    log(`voice_ready: VAD=${cap.vad} STT=${cap.stt} TTS=${cap.tts}`, 'ok')
+    break
+  }
+  case 'voice_vad_start':
+    dot('dotSpeaking', 'pulse')
+    log('VAD: speech start', 'vad')
+    break
+  case 'voice_vad_end':
+    dot('dotSpeaking', 'off')
+    log(`VAD: speech end (${msg.payload.duration_ms}ms)`, 'vad')
+    break
+  case 'voice_transcript': {
+    const p = msg.payload
+    const box = document.getElementById('transcriptBox')
+    box.className = 'transcript-box ' + (p.is_final ? 'final' : 'partial')
+    box.textContent = p.text || '—'
+    if (p.is_final && p.text) {
+      const input = document.getElementById('dictationInput')
+      const sep = input.value.length > 0 ? ' ' : ''
+      input.value += sep + p.text
+    }
+    log(`STT: "${p.text}" (final=${p.is_final})`, 'stt')
+    break
+  }
+  case 'voice_ai_start':
+    document.getElementById('aiBox').textContent = ''
+    document.getElementById('cancelBtn').disabled = false
+    log(`AI start: "${msg.payload.transcript}"`, 'ai')
+    break
+  case 'voice_ai_stream':
+    document.getElementById('aiBox').textContent += msg.payload.content
+    break
+  case 'voice_tts_start':
+    ttsSampleRate = msg.payload.sample_rate || 24000
+    dot('dotPlaying', 'pulse')
+    isMuted = true  // mute mic to prevent feedback
+    log(`TTS start (${ttsSampleRate}Hz) — mic muted`, 'tts')
+    initTTSContext()
+    break
+  case 'voice_tts_end':
+    dot('dotPlaying', 'off')
+    isMuted = false
+    log(`TTS end (${msg.payload.duration_ms}ms) — mic unmuted`, 'tts')
+    break
+  case 'voice_ai_complete':
+    document.getElementById('cancelBtn').disabled = true
+    log(`AI complete: ${msg.payload.status}${msg.payload.error ? ' — '+msg.payload.error : ''}`,
+        msg.payload.status === 'success' ? 'ok' : 'warn')
+    break
+  case 'voice_error':
+    log(`Error [${msg.payload.code}]: ${msg.payload.message}`, 'error')
+    break
+  case 'pong':
+    break
+  default:
+    log(`Unknown msg: ${msg.type}`, 'info')
+  }
+}
+
+// ── TTS Audio Playback ─────────────────────────────────────────────────────
+function initTTSContext() {
+  if (ttsCtx && ttsCtx.sampleRate !== ttsSampleRate) {
+    ttsCtx.close()
+    ttsCtx = null
+  }
+  if (!ttsCtx) {
+    ttsCtx = new AudioContext({ sampleRate: ttsSampleRate })
+    ttsNextTime = 0
+  }
+  if (ttsCtx.state === 'suspended') ttsCtx.resume()
+  if (ttsNextTime < ttsCtx.currentTime) ttsNextTime = ttsCtx.currentTime + 0.05
+}
+
+function onTTSAudio(arrayBuf) {
+  if (!ttsCtx) return
+  const int16 = new Int16Array(arrayBuf)
+  const float32 = new Float32Array(int16.length)
+  for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768.0
+
+  const buf = ttsCtx.createBuffer(1, float32.length, ttsSampleRate)
+  buf.copyToChannel(float32, 0)
+  const src = ttsCtx.createBufferSource()
+  src.buffer = buf
+  src.connect(ttsCtx.destination)
+  src.start(ttsNextTime)
+  ttsNextTime += buf.duration
+}
+
+// ── Microphone Capture ─────────────────────────────────────────────────────
+async function startRecording() {
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: {
+      sampleRate: TARGET_RATE, channelCount: 1, echoCancellation: true, noiseSuppression: true
+    }})
+  } catch(e) {
+    log('Mic access denied: ' + e.message, 'error')
+    return
+  }
+
+  audioCtx = new AudioContext({ sampleRate: TARGET_RATE })
+  const source = audioCtx.createMediaStreamSource(mediaStream)
+
+  // ScriptProcessor for broad browser compatibility
+  processorNode = audioCtx.createScriptProcessor(4096, 1, 1)
+
+  let buf = new Float32Array(0)
+  processorNode.onaudioprocess = (e) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN || isMuted) return
+    const input = e.inputBuffer.getChannelData(0)
+
+    // Volume indicator
+    let rms = 0
+    for (let i = 0; i < input.length; i++) rms += input[i] * input[i]
+    rms = Math.sqrt(rms / input.length)
+    document.getElementById('vol-fill').style.width = Math.min(rms * 400, 100) + '%'
+
+    // Accumulate and send in FRAME_SAMPLES chunks
+    const merged = new Float32Array(buf.length + input.length)
+    merged.set(buf)
+    merged.set(input, buf.length)
+    buf = merged
+
+    while (buf.length >= FRAME_SAMPLES) {
+      const frame = buf.slice(0, FRAME_SAMPLES)
+      buf = buf.slice(FRAME_SAMPLES)
+      const pcm16 = float32ToInt16(frame)
+      ws.send(pcm16.buffer)
+    }
+  }
+
+  source.connect(processorNode)
+  processorNode.connect(audioCtx.destination)
+  isRecording = true
+
+  document.getElementById('startBtn').disabled = true
+  document.getElementById('stopBtn').disabled = false
+  document.getElementById('cancelBtn').disabled = false
+  log('Microphone started (16kHz PCM16)', 'ok')
+}
+
+function stopRecording() {
+  if (processorNode) { processorNode.disconnect(); processorNode = null }
+  if (audioCtx) { audioCtx.close(); audioCtx = null }
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null }
+  isRecording = false
+  document.getElementById('vol-fill').style.width = '0%'
+  document.getElementById('startBtn').disabled = !ws
+  document.getElementById('stopBtn').disabled = true
+  if (isRecording) log('Microphone stopped', 'info')
+}
+
+// ── Audio helpers ──────────────────────────────────────────────────────────
+function float32ToInt16(float32) {
+  const int16 = new Int16Array(float32.length)
+  for (let i = 0; i < float32.length; i++) {
+    const s = Math.max(-1, Math.min(1, float32[i]))
+    int16[i] = s < 0 ? s * 32768 : s * 32767
+  }
+  return int16
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+log('Ready. Enter PIN, click Pair, then Connect.', 'info')
+
+// Auto-detect local server address
+const proto = location.protocol === 'https:' ? 'wss://' : 'ws://'
+if (location.hostname && location.hostname !== '') {
+  const host = location.hostname === '0.0.0.0' ? 'localhost' : location.hostname
+  document.getElementById('serverAddr').value = `${proto}${host}:8443`
+}
+</script>
+</body>
+</html>
