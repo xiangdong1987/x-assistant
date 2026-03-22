@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"claude-voice-proxy/auth"
@@ -17,6 +18,12 @@ import (
 	"claude-voice-proxy/server"
 	"claude-voice-proxy/voice"
 )
+
+// multiFlag collects repeated -flag=value occurrences.
+type multiFlag []string
+
+func (f *multiFlag) String() string  { return strings.Join(*f, ", ") }
+func (f *multiFlag) Set(v string) error { *f = append(*f, v); return nil }
 
 // getEnvInt returns an integer value from environment variable with a default fallback
 func getEnvInt(key string, defaultVal int) int {
@@ -73,6 +80,8 @@ func main() {
 	voiceSTTThreads := flag.Int("voice-stt-threads", 2, "STT inference thread count")
 	voiceTTSThreads := flag.Int("voice-tts-threads", 2, "TTS inference thread count")
 	voiceSpeaker    := flag.Int("voice-tts-speaker", 0, "Default TTS speaker ID")
+	var voiceSTTDirs multiFlag
+	flag.Var(&voiceSTTDirs, "voice-stt-dir", "STT model directory (repeatable; auto-detects zipformer/paraformer/whisper)")
 
 	// Optional PIN to persist before start (for app-launch / launchd with known PIN so client can auto-connect)
 	pinFlag := flag.String("pin", "", "Pairing PIN (6 digits); if set, persisted and used for this and future runs")
@@ -188,6 +197,9 @@ func main() {
 	voiceCfg.STTNumThreads = *voiceSTTThreads
 	voiceCfg.TTSNumThreads = *voiceTTSThreads
 	voiceCfg.DefaultSpeaker = *voiceSpeaker
+	if len(voiceSTTDirs) > 0 {
+		voiceCfg.STTDirs = []string(voiceSTTDirs)
+	}
 
 	// Create and start server
 	srv := server.New(*host, *port, *workDir, *skillsPath, mcpConfig, openclawConfig, *allowLocalNoAuth, taskSyncIntervalSec, phaseWatcherIntervalSec, voiceCfg)

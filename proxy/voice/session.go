@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"math"
+	"sync"
 	"time"
 
-	sherpa "github.com/k2-fsa/sherpa-onnx-go/sherpa_onnx"
+	"claude-voice-proxy/voice/stt"
 	"github.com/gorilla/websocket"
 )
 
@@ -212,7 +213,6 @@ func (s *VoiceSession) handleCtrlMessage(msg VoiceMessage) {
 // to the speech channel for AI processing.
 func (s *VoiceSession) vadProcessor() {
 	vad := s.models.VAD
-	rec := s.models.Recognizer
 
 	if vad == nil {
 		// Drain audioIn to prevent sender blocking
@@ -225,11 +225,15 @@ func (s *VoiceSession) vadProcessor() {
 		}
 	}
 
+	// preRollSamples: keep ~400ms of audio before speech onset so the first
+	// syllable is not clipped when VAD fires late.
+	const preRollSamples = sttSampleRate * 400 / 1000 // 6400 samples @ 16kHz
+
 	var (
 		buf         []float32
+		preRoll     []float32 // circular pre-roll buffer (silence before speech)
 		speaking    bool
 		speechStart time.Time
-		sttStream   *sherpa.OnlineStream
 		lastText    string
 	)
 
@@ -242,18 +246,11 @@ func (s *VoiceSession) vadProcessor() {
 		s.SendJSON(MsgVADEnd(s.sessionID, time.Now().UnixMilli(), durMs))
 
 		finalText := lastText
-		if rec != nil && sttStream != nil {
-			sttStream.InputFinished()
-			// Decode any remaining frames
-			for rec.IsReady(sttStream) {
-				rec.Decode(sttStream)
+		if len(s.models.Engines) > 0 {
+			finalText = finalizeAllEngines(s.models.Engines)
+			for _, eng := range s.models.Engines {
+				eng.Reset()
 			}
-			result := rec.GetResult(sttStream)
-			if result != nil && result.Text != "" {
-				finalText = result.Text
-			}
-			sherpa.DeleteOnlineStream(sttStream)
-			sttStream = nil
 			lastText = ""
 		}
 
@@ -291,29 +288,33 @@ func (s *VoiceSession) vadProcessor() {
 					speechStart = time.Now()
 					lastText = ""
 					s.SendJSON(MsgVADStart(s.sessionID, speechStart.UnixMilli()))
-					log.Printf("[Voice:%s] VAD: speech start", s.sessionID)
-
-					if rec != nil {
-						sttStream = sherpa.NewOnlineStream(rec)
+					log.Printf("[Voice:%s] VAD: speech start (pre-roll %d samples)", s.sessionID, len(preRoll))
+					// Feed pre-roll frames first so the first syllable is not clipped.
+					for _, eng := range s.models.Engines {
+						for i := 0; i < len(preRoll); i += vadWindowSamples {
+							end := i + vadWindowSamples
+							if end > len(preRoll) {
+								end = len(preRoll)
+							}
+							eng.AcceptChunk(preRoll[i:end])
+						}
 					}
+					preRoll = preRoll[:0]
 				}
 
 				// Feed audio to STT while speaking
-				if speaking && rec != nil && sttStream != nil {
-					sttStream.AcceptWaveform(sttSampleRate, chunk)
-
-					// Decode and emit partial transcript
-					for rec.IsReady(sttStream) {
-						rec.Decode(sttStream)
+				if speaking {
+					for _, eng := range s.models.Engines {
+						if partial, streaming := eng.AcceptChunk(chunk); streaming && partial != "" && partial != lastText {
+							lastText = partial
+							s.SendJSON(MsgTranscript(s.sessionID, lastText, false))
+						}
 					}
-					if result := rec.GetResult(sttStream); result != nil && result.Text != "" && result.Text != lastText {
-						lastText = result.Text
-						s.SendJSON(MsgTranscript(s.sessionID, lastText, false))
-					}
-
-					// On endpoint, reset stream and keep going (mid-utterance endpoint)
-					if rec.IsEndpoint(sttStream) && lastText != "" {
-						rec.Reset(sttStream)
+				} else {
+					// Not speaking: maintain pre-roll buffer (keep last 400ms).
+					preRoll = append(preRoll, chunk...)
+					if len(preRoll) > preRollSamples {
+						preRoll = preRoll[len(preRoll)-preRollSamples:]
 					}
 				}
 
@@ -329,6 +330,30 @@ func (s *VoiceSession) vadProcessor() {
 			}
 		}
 	}
+}
+
+// finalizeAllEngines runs all engines in parallel and returns the longest result.
+func finalizeAllEngines(engines []stt.Engine) string {
+	if len(engines) == 1 {
+		return engines[0].Finalize()
+	}
+	results := make([]string, len(engines))
+	var wg sync.WaitGroup
+	for i, e := range engines {
+		wg.Add(1)
+		go func(idx int, eng stt.Engine) {
+			defer wg.Done()
+			results[idx] = eng.Finalize()
+		}(i, e)
+	}
+	wg.Wait()
+	best := ""
+	for _, r := range results {
+		if len([]rune(r)) > len([]rune(best)) {
+			best = r
+		}
+	}
+	return best
 }
 
 // ── aiTtsWorker ──────────────────────────────────────────────────────────────

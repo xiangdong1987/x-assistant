@@ -3,20 +3,21 @@ package voice
 import (
 	"log"
 	"os"
-	"path/filepath"
 
 	sherpa "github.com/k2-fsa/sherpa-onnx-go/sherpa_onnx"
+
+	"claude-voice-proxy/voice/stt"
 )
 
 // VoiceModels holds loaded Sherpa-ONNX model instances.
 type VoiceModels struct {
-	config     *VoiceConfig
-	VAD        *sherpa.VoiceActivityDetector
-	Recognizer *sherpa.OnlineRecognizer
-	TTS        *sherpa.OfflineTts
-	hasVAD     bool
-	hasSTT     bool
-	hasTTS     bool
+	config  *VoiceConfig
+	VAD     *sherpa.VoiceActivityDetector
+	Engines []stt.Engine
+	TTS     *sherpa.OfflineTts
+	hasVAD  bool
+	hasSTT  bool
+	hasTTS  bool
 }
 
 // NewVoiceModels initialises voice models from config.
@@ -31,7 +32,7 @@ func NewVoiceModels(cfg *VoiceConfig) (*VoiceModels, error) {
 				Model:              cfg.VADModel,
 				Threshold:          cfg.VADThreshold,
 				MinSilenceDuration: float32(cfg.VADSilenceMs) / 1000.0,
-				MinSpeechDuration:  0.1,
+				MinSpeechDuration:  0.25, // ignore noise bursts < 250ms
 				WindowSize:         512, // 32ms @ 16kHz
 				MaxSpeechDuration:  30.0,
 			},
@@ -51,46 +52,20 @@ func NewVoiceModels(cfg *VoiceConfig) (*VoiceModels, error) {
 		log.Printf("[Voice] VAD model not found: %s (run models/download.sh)", cfg.VADModel)
 	}
 
-	// ── STT: Streaming Zipformer (Transducer) ────────────────────────────────
-	encoderPath := filepath.Join(cfg.STTDir, "encoder.int8.onnx")
-	decoderPath := filepath.Join(cfg.STTDir, "decoder.int8.onnx")
-	joinerPath := filepath.Join(cfg.STTDir, "joiner.int8.onnx")
-	tokensPath := filepath.Join(cfg.STTDir, "tokens.txt")
-
-	if allExist(encoderPath, decoderPath, joinerPath, tokensPath) {
-		recCfg := &sherpa.OnlineRecognizerConfig{
-			FeatConfig: sherpa.FeatureConfig{
-				SampleRate: 16000,
-				FeatureDim: 80,
-			},
-			ModelConfig: sherpa.OnlineModelConfig{
-				Transducer: sherpa.OnlineTransducerModelConfig{
-					Encoder: encoderPath,
-					Decoder: decoderPath,
-					Joiner:  joinerPath,
-				},
-				Tokens:     tokensPath,
-				NumThreads: cfg.STTNumThreads,
-				Provider:   "cpu",
-				Debug:      0,
-				ModelType:  "zipformer",
-			},
-			DecodingMethod:          "greedy_search",
-			EnableEndpoint:          1,
-			Rule1MinTrailingSilence: 2.4,
-			Rule2MinTrailingSilence: 1.2,
-			Rule3MinUtteranceLength: 20,
+	// ── STT: load all configured directories ────────────────────────────────
+	for _, dir := range cfg.STTDirs {
+		if dir == "" {
+			continue
 		}
-		m.Recognizer = sherpa.NewOnlineRecognizer(recCfg)
-		if m.Recognizer != nil {
-			m.hasSTT = true
-			log.Printf("[Voice] STT loaded: %s", cfg.STTDir)
-		} else {
-			log.Printf("[Voice] STT init failed (dir=%s)", cfg.STTDir)
+		eng, err := stt.Load(dir, cfg.STTNumThreads)
+		if err != nil {
+			log.Printf("[Voice] STT skip %s: %v", dir, err)
+			continue
 		}
-	} else {
-		log.Printf("[Voice] STT models not found in %s (run models/download.sh)", cfg.STTDir)
+		m.Engines = append(m.Engines, eng)
+		log.Printf("[Voice] STT loaded: %s", eng.Name())
 	}
+	m.hasSTT = len(m.Engines) > 0
 
 	// ── TTS: Kokoro multi-lang ───────────────────────────────────────────────
 	if _, err := os.Stat(cfg.TTSModel); err == nil {
@@ -146,10 +121,10 @@ func (m *VoiceModels) Close() {
 		sherpa.DeleteVoiceActivityDetector(m.VAD)
 		m.VAD = nil
 	}
-	if m.Recognizer != nil {
-		sherpa.DeleteOnlineRecognizer(m.Recognizer)
-		m.Recognizer = nil
+	for _, e := range m.Engines {
+		e.Close()
 	}
+	m.Engines = nil
 	if m.TTS != nil {
 		sherpa.DeleteOfflineTts(m.TTS)
 		m.TTS = nil
@@ -157,12 +132,3 @@ func (m *VoiceModels) Close() {
 	log.Println("[Voice] models closed")
 }
 
-// allExist returns true if every path exists.
-func allExist(paths ...string) bool {
-	for _, p := range paths {
-		if _, err := os.Stat(p); err != nil {
-			return false
-		}
-	}
-	return true
-}

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +21,7 @@ import '../../widgets/output_panel.dart';
 import '../../widgets/status_indicator.dart';
 import '../../widgets/voice_button.dart';
 import '../../../services/voice_service.dart';
+import '../../../services/connection_service.dart' show savedConnectionProvider;
 
 final _logger = Logger(printer: PrettyPrinter(methodCount: 0, noBoxingByDefault: true));
 
@@ -75,6 +77,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   StreamSubscription<Map<String, dynamic>>? _messageSubscription;
   StreamSubscription<ConnectionStatus>? _statusSubscription;
+  Timer? _voiceAutoSubmitTimer;
+  Timer? _voiceCountdownTickTimer;
+  int? _voiceAutoSubmitCountdown; // null = not active
   bool _isProcessing = false;
   ConnectionStatus _connectionStatus = ConnectionStatus.disconnected;
   bool _openclawConnected = true;
@@ -329,7 +334,83 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   @override
+  static const _kAutoSubmitSeconds = 5;
+
+  void _startVoiceCountdown(String textToSend) {
+    _voiceAutoSubmitTimer?.cancel();
+    _voiceCountdownTickTimer?.cancel();
+    setState(() => _voiceAutoSubmitCountdown = _kAutoSubmitSeconds);
+
+    // Tick every second to update the UI counter.
+    _voiceCountdownTickTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      final remaining = (_voiceAutoSubmitCountdown ?? 0) - 1;
+      if (remaining <= 0) {
+        t.cancel();
+      } else {
+        setState(() => _voiceAutoSubmitCountdown = remaining);
+      }
+    });
+
+    // Fire the actual submission after the full countdown.
+    _voiceAutoSubmitTimer = Timer(
+      Duration(seconds: _kAutoSubmitSeconds),
+      () {
+        _voiceCountdownTickTimer?.cancel();
+        setState(() => _voiceAutoSubmitCountdown = null);
+        if (!_isProcessing && textToSend.isNotEmpty) {
+          _sendMessage(textToSend);
+        }
+      },
+    );
+  }
+
+  void _cancelVoiceCountdown() {
+    _voiceAutoSubmitTimer?.cancel();
+    _voiceCountdownTickTimer?.cancel();
+    if (_voiceAutoSubmitCountdown != null) {
+      setState(() => _voiceAutoSubmitCountdown = null);
+    }
+  }
+
+  /// SenseVoice and other models may append punctuation after a command word,
+  /// e.g. "发送。" or "清除，". Strip trailing CJK/ASCII punctuation first.
+  static String _stripTrailingPunct(String text) =>
+      text.trimRight().replaceAll(RegExp(r'[。，！？、,.!?；;…~～]+$'), '').trimRight();
+
+  // ── Submit triggers ────────────────────────────────────────────────────────
+  static const _submitTriggers = [
+    '发送', '提交', '发出去', '发吧', '好了发送', '就这样发', '发出',
+    'send', 'submit', 'send it',
+  ];
+
+  /// Returns the text with the trailing submit-trigger removed,
+  /// or null if not found.
+  static String? _stripSubmitTrigger(String raw) {
+    final text = _stripTrailingPunct(raw.trim());
+    for (final trigger in _submitTriggers) {
+      if (text.endsWith(trigger)) {
+        return text.substring(0, text.length - trigger.length).trimRight();
+      }
+    }
+    return null;
+  }
+
+  // ── Clear triggers ─────────────────────────────────────────────────────────
+  static const _clearTriggers = [
+    '清除', '清空', '删除', '重来', '算了', '取消输入',
+    'clear', 'clear input', 'cancel input',
+  ];
+
+  /// Returns true if the raw text ends with a clear-trigger word.
+  static bool _isClearTrigger(String raw) {
+    final text = _stripTrailingPunct(raw.trim());
+    return _clearTriggers.any((t) => text.endsWith(t));
+  }
+
+  @override
   void dispose() {
+    _voiceAutoSubmitTimer?.cancel();
+    _voiceCountdownTickTimer?.cancel();
     _messageSubscription?.cancel();
     _statusSubscription?.cancel();
     _textController.dispose();
@@ -438,16 +519,57 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Fill the text field whenever a final transcript arrives.
+    // Append final transcript to the text field whenever it arrives,
+    // then reset a 5-second auto-submit timer.
     ref.listen<VoiceState>(voiceServiceProvider, (prev, next) {
       final t = next.lastFinalTranscript;
       if (t != null && t.isNotEmpty && t != prev?.lastFinalTranscript) {
-        _textController.text = t;
-        _textController.selection = TextSelection.collapsed(offset: t.length);
+        final existing = _textController.text;
+        final sep = existing.isNotEmpty ? ' ' : '';
+        _textController.text = existing + sep + t;
+        _textController.selection =
+            TextSelection.collapsed(offset: _textController.text.length);
+
+        // Check for voice commands in the full input text.
+        final full = _textController.text;
+        if (_isClearTrigger(full)) {
+          // "清除" / "clear" — wipe the input field immediately.
+          _cancelVoiceCountdown();
+          _textController.clear();
+        } else {
+          final stripped = _stripSubmitTrigger(full);
+          if (stripped != null) {
+            _textController.text = stripped;
+            _textController.selection =
+                TextSelection.collapsed(offset: stripped.length);
+            _startVoiceCountdown(stripped);
+          } else {
+            _cancelVoiceCountdown();
+          }
+        }
       }
     });
 
-    return Scaffold(
+    // ⌃M  — toggle voice input
+    final voiceNotifier = ref.read(voiceServiceProvider.notifier);
+    final voiceState = ref.watch(voiceServiceProvider);
+    final connAsync = ref.watch(savedConnectionProvider);
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyM, control: true): () async {
+          final info = connAsync.valueOrNull;
+          if (info == null) return;
+          if (voiceState.isActive) {
+            await voiceNotifier.stop();
+          } else {
+            await voiceNotifier.start(info);
+          }
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
       appBar: AppBar(
         title: const StatusIndicator(),
         actions: [
@@ -533,6 +655,44 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       );
                     },
                   ),
+                  // Auto-submit countdown badge (only visible when active)
+                  if (_voiceAutoSubmitCountdown != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.send, size: 14,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${_voiceAutoSubmitCountdown}s 后自动发送',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _cancelVoiceCountdown,
+                                  child: Icon(Icons.close, size: 14,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   Row(
                     children: [
                       Expanded(
@@ -601,7 +761,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
         ],
       ),
-    );
+        ), // Scaffold
+      ), // Focus
+    ); // CallbackShortcuts
   }
 }
 

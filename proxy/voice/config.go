@@ -16,8 +16,8 @@ type VoiceConfig struct {
 	VADThreshold float32
 	VADSilenceMs int // milliseconds of silence to end an utterance
 
-	// STT (Streaming Zipformer / Paraformer)
-	STTDir        string
+	// STT (Streaming Zipformer / Paraformer / Whisper)
+	STTDirs       []string
 	STTNumThreads int
 
 	// TTS (Kokoro)
@@ -37,10 +37,10 @@ func DefaultVoiceConfig(modelsDir string) *VoiceConfig {
 		Enabled:        false,
 		ModelsDir:      modelsDir,
 		VADModel:       filepath.Join(modelsDir, "vad", "silero_vad.onnx"),
-		VADThreshold:   0.5,
-		VADSilenceMs:   500,
-		STTDir:         filepath.Join(modelsDir, "stt"),
-		STTNumThreads:  2,
+		VADThreshold:   0.4, // slightly more sensitive
+		VADSilenceMs:   700, // 700ms silence to end utterance (was 500ms)
+		STTDirs:        []string{filepath.Join(modelsDir, "stt")},
+		STTNumThreads:  4,
 		TTSModel:       filepath.Join(modelsDir, "tts", "model.onnx"),
 		TTSVoices:      filepath.Join(modelsDir, "tts", "voices.bin"),
 		TTSTokens:      filepath.Join(modelsDir, "tts", "tokens.txt"),

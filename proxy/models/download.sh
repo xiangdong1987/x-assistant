@@ -37,6 +37,30 @@ download \
   "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx" \
   "$VAD_DIR/silero_vad.onnx"
 
+# ─── STT: Paraformer zh (offline, higher accuracy for Chinese) ───────────────
+echo ""
+echo "=== STT: Paraformer zh ==="
+PARAFORMER_DIR="$SCRIPT_DIR/stt-paraformer-zh"
+PARAFORMER_ARCHIVE="sherpa-onnx-paraformer-zh-2023-09-14.tar.bz2"
+PARAFORMER_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/$PARAFORMER_ARCHIVE"
+
+if [ ! -f "$PARAFORMER_DIR/tokens.txt" ]; then
+  mkdir -p "$PARAFORMER_DIR"
+  TMP="$(mktemp -d)"
+  echo "[download] $PARAFORMER_ARCHIVE (~220MB)"
+  curl -L --progress-bar -o "$TMP/$PARAFORMER_ARCHIVE" "$PARAFORMER_URL"
+  echo "[extract] $PARAFORMER_ARCHIVE"
+  tar -xjf "$TMP/$PARAFORMER_ARCHIVE" -C "$TMP"
+  MODEL_DIR="$(find "$TMP" -maxdepth 2 -name "tokens.txt" | head -1 | xargs dirname)"
+  cp "$MODEL_DIR"/model.int8.onnx "$PARAFORMER_DIR/model.int8.onnx"
+  cp "$MODEL_DIR/tokens.txt"      "$PARAFORMER_DIR/tokens.txt"
+  echo "paraformer" > "$PARAFORMER_DIR/type.txt"
+  rm -rf "$TMP"
+  echo "[done] Paraformer extracted to $PARAFORMER_DIR"
+else
+  echo "[skip] Paraformer models already exist"
+fi
+
 # ─── STT: Streaming Zipformer bilingual zh-en ────────────────────────────────
 echo ""
 echo "=== STT: Streaming Zipformer bilingual zh-en ==="
